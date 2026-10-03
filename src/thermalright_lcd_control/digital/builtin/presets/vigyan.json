@@ -1,0 +1,40 @@
+{
+ "schema": 1,
+ "id": "vigyan",
+ "order": 10,
+ "name": "VigyanBytes",
+ "description": "Brand colours: saffron digits that deepen with CPU temperature, green CPU light",
+ "requires": [],
+ "ranges": {
+  "cpu_min_temp": 40,
+  "cpu_max_temp": 90
+ },
+ "cycle_duration": 5,
+ "layouts": {
+  "small": {
+   "display_mode": "cpu_temp",
+   "colors": {
+    "default": "fcd34d-c2670d-cpu_temp",
+    "groups": {
+     "cpu_led": "22c55e",
+     "gpu_led": "22c55e",
+     "celsius": "faf6ee",
+     "fahrenheit": "faf6ee",
+     "percent": "faf6ee"
+    }
+   }
+  },
+  "big": {
+   "display_mode": "time_cpu",
+   "colors": {
+    "default": "faf6ee",
+    "groups": {
+     "cpu_temp": "fcd34d-c2670d-cpu_temp",
+     "cpu_usage": "22c55e-f59e0b-cpu_usage",
+     "cpu_led": "22c55e",
+     "gpu_led": "22c55e"
+    }
+   }
+  }
+ }
+}

@@ -19,6 +19,7 @@ Outputs (committed on the brand branch; main never carries them):
   src/thermalright_lcd_control/themes/builtin/packs/vigyan-ivory.json
   src/thermalright_lcd_control/themes/builtin/packs/vigyan-deep.json
   src/thermalright_lcd_control/themes/builtin/packs/vigyan/{fonts,marks}/...
+  src/thermalright_lcd_control/digital/builtin/presets/vigyan.json   (segment display)
 """
 import argparse
 import json
@@ -115,6 +116,28 @@ def main():
         }
         (PACKS / f"{pid}.json").write_text(json.dumps(doc, indent=2) + "\n")
         print(f"wrote {pid}.json")
+    # Digital segment display preset: saffron digits warming with CPU temperature, green
+    # CPU indicator, paper unit LEDs; colours from tokens.css (rrggbb without '#').
+    h = lambda tok: t[tok].lstrip("#")
+    preset = {
+        "schema": 1, "id": "vigyan", "order": 10, "name": "VigyanBytes",
+        "description": "Brand colours: saffron digits that deepen with CPU temperature, green CPU light",
+        "requires": [], "ranges": {"cpu_min_temp": 40, "cpu_max_temp": 90}, "cycle_duration": 5,
+        "layouts": {
+            "small": {"display_mode": "cpu_temp", "colors": {
+                "default": f"{h('vb-saffron-300')}-{h('vb-saffron-700')}-cpu_temp",
+                "groups": {"cpu_led": h("vb-green-500"), "gpu_led": h("vb-green-500"),
+                           "celsius": h("vb-paper"), "fahrenheit": h("vb-paper"), "percent": h("vb-paper")}}},
+            "big": {"display_mode": "time_cpu", "colors": {
+                "default": h("vb-paper"),
+                "groups": {"cpu_temp": f"{h('vb-saffron-300')}-{h('vb-saffron-700')}-cpu_temp",
+                           "cpu_usage": f"{h('vb-green-500')}-{h('vb-saffron-500')}-cpu_usage",
+                           "cpu_led": h("vb-green-500"), "gpu_led": h("vb-green-500")}}},
+        },
+    }
+    dp = REPO / "src" / "thermalright_lcd_control" / "digital" / "builtin" / "presets" / "vigyan.json"
+    dp.write_text(json.dumps(preset, indent=1) + "\n")
+    print(f"wrote {dp.name}")
     bad = check_designs()
     for w in warnings:
         print("WARN", w)
