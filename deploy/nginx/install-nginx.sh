@@ -19,6 +19,13 @@
 #                        there (?rd=<base>/login); writes keep plain 401/403. Any OIDC
 #                        provider works behind oauth2-proxy (Keycloak, Google, GitHub,
 #                        Nextcloud with its OIDC app, ...).
+#                        Ready-made oauth2-proxy setup for any OIDC provider: see
+#                        vigyan-llm-cli kits/gateway-forward-auth
+#                        (https://github.com/manishknema/vigyan-llm-cli). It already
+#                        renders the auth locations, so reuse them instead of
+#                        --auth-url/--signin-url:
+#                          --auth-location /_forward_auth_<group>
+#                          --signin-location @forward_auth_signin
 #   --auth none          no auth (only for a trusted, loopback-only proxy).
 #
 # Output (include the first inside a server {} block, the second at http {} level):
@@ -32,16 +39,18 @@
 #
 # Options: --base-path P (default /display/) --upstream URL (default http://127.0.0.1:7431)
 #   --token-file F (required) --out-dir D (default /etc/nginx/snippets) --http-conf F
-#   --realm TEXT --rate N/m (default 20r/m) --signin-url URL --allow-http-writes --reload --dry-run
+#   --realm TEXT --rate N/m (default 20r/m) --signin-url URL --auth-location LOC --signin-location @NAME
+#   --allow-http-writes --reload --dry-run
 set -euo pipefail
 
 BASE="/display/"; UP="http://127.0.0.1:7431"; TOKEN_FILE=""; AUTH="htpasswd"; HTPASSWD="/etc/nginx/thermalright-display.htpasswd"
-AUTH_URL=""; SIGNIN_URL=""; CREATE_USER=""; OUT="/etc/nginx/snippets"; HTTP_CONF="/etc/nginx/conf.d/thermalright-display-zone.conf"
+AUTH_URL=""; SIGNIN_URL=""; AUTH_LOCATION=""; SIGNIN_LOCATION=""; CREATE_USER=""; OUT="/etc/nginx/snippets"; HTTP_CONF="/etc/nginx/conf.d/thermalright-display-zone.conf"
 REALM="Display editor"; RATE="20r/m"; HTTPS_ONLY=1; RELOAD=0; DRY=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --base-path) BASE="$2"; shift ;; --upstream) UP="$2"; shift ;; --token-file) TOKEN_FILE="$2"; shift ;;
     --auth) AUTH="$2"; shift ;; --htpasswd) HTPASSWD="$2"; shift ;; --auth-url) AUTH_URL="$2"; shift ;; --signin-url) SIGNIN_URL="$2"; shift ;;
+    --auth-location) AUTH_LOCATION="$2"; shift ;; --signin-location) SIGNIN_LOCATION="$2"; shift ;;
     --create-user) CREATE_USER="$2"; shift ;; --out-dir) OUT="$2"; shift ;; --http-conf) HTTP_CONF="$2"; shift ;;
     --realm) REALM="$2"; shift ;; --rate) RATE="$2"; shift ;; --allow-http-writes) HTTPS_ONLY=0 ;;
     --reload) RELOAD=1 ;; --dry-run) DRY=1 ;;
@@ -55,7 +64,7 @@ done
 token="$(tr -d '[:space:]' <"${TOKEN_FILE}")"
 [[ "${token}" =~ ^[A-Za-z0-9._-]{8,128}$ ]] || { echo "token has an unexpected format" >&2; exit 2; }
 case "${AUTH}" in htpasswd|auth_request|none) ;; *) echo "--auth htpasswd|auth_request|none" >&2; exit 2 ;; esac
-[[ "${AUTH}" != auth_request || -n "${AUTH_URL}" ]] || { echo "--auth auth_request needs --auth-url" >&2; exit 2; }
+[[ "${AUTH}" != auth_request || -n "${AUTH_URL}" || -n "${AUTH_LOCATION}" ]] || { echo "--auth auth_request needs --auth-url or --auth-location" >&2; exit 2; }
 
 slug="$(printf '%s' "${BASE}" | tr -c 'A-Za-z0-9' '_' | sed 's/^_*//; s/_*$//')"; slug="${slug:-root}"
 WRITE="/_tlcd_write_${slug}${BASE}"
@@ -65,8 +74,11 @@ LOGIN_HTML="${OUT}/thermalright-display-login.html"
 auth_block() {  # $1 = login|write
   case "${AUTH}" in
     htpasswd) printf '    auth_basic "%s";\n    auth_basic_user_file %s;\n' "${REALM}" "${HTPASSWD}" ;;
-    auth_request) printf '    auth_request /_tlcd_auth_%s;\n' "${slug}"
-                  [[ "${1:-write}" == login && -n "${SIGNIN_URL}" ]] && printf '    error_page 401 = @tlcd_signin_%s;\n' "${slug}"
+    auth_request) printf '    auth_request %s;\n' "${AUTH_LOCATION:-/_tlcd_auth_${slug}}"
+                  if [[ "${1:-write}" == login ]]; then
+                    if [[ -n "${SIGNIN_LOCATION}" ]]; then printf '    error_page 401 = %s;\n' "${SIGNIN_LOCATION}"
+                    elif [[ -n "${SIGNIN_URL}" ]]; then printf '    error_page 401 = @tlcd_signin_%s;\n' "${slug}"; fi
+                  fi
                   return 0 ;;
     none) printf '    # auth: none\n' ;;
   esac
@@ -127,7 +139,7 @@ $(auth_block write)
 $(proxy_block "${WRITE}")
 }
 EOF
-  if [[ "${AUTH}" == auth_request ]]; then
+  if [[ "${AUTH}" == auth_request && -z "${AUTH_LOCATION}" ]]; then
     cat <<EOF
 
 location = /_tlcd_auth_${slug} {
@@ -140,7 +152,7 @@ location = /_tlcd_auth_${slug} {
     proxy_set_header X-Original-Method \$request_method;
 }
 EOF
-    if [[ -n "${SIGNIN_URL}" ]]; then
+    if [[ -n "${SIGNIN_URL}" && -z "${SIGNIN_LOCATION}" ]]; then
       cat <<EOF
 
 location @tlcd_signin_${slug} {
