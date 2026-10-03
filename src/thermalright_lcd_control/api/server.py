@@ -109,20 +109,20 @@ class DisplayApi:
             return ""
 
     # ── capability doc (mDNS consumers read this) ───────────────────────────
-    def node_url(self, node_id: str, hostname: str = "") -> Optional[str]:
+    def node_url(self, node_id: str, hostname: str = "", slug: str = "") -> Optional[str]:
         t = self.node_url_template
-        return t.format(node_id=node_id, hostname=hostname) if t else None
+        return t.format(node_id=node_id, hostname=hostname, slug=slug or node_id) if t else None
 
     def capability(self) -> dict:
         st = self.rt.status()
         dev, ident = st["device"], st.get("identity") or {}
         return {"hw_display": {
-            "node_id": ident.get("node_id"), "node_name": ident.get("node_name"),
+            "node_id": ident.get("node_id"), "node_name": ident.get("node_name"), "slug": ident.get("slug"),
             "device_kind": ident.get("device_kind", "aio"),
             "model": dev.get("model"), "vid_pid": dev.get("vid_pid"),
             "resolution": f"{dev['width']}x{dev['height']}", "driver": "thermalright-lcd-control-aio",
             "connected": dev.get("connected", True), "api_port": self.port, "api_lan": self.lan,
-            "url": self.node_url(ident.get("node_id", ""), ident.get("node_name", "")),
+            "url": self.node_url(ident.get("node_id", ""), ident.get("node_name", ""), ident.get("slug", "")),
             "theme": st["theme"], "updated": int(time.time()),
         }}
 
@@ -360,7 +360,8 @@ class DisplayApi:
                 if not hw:
                     continue
                 nid = hw.get("node_id") or nid
-                url = self.node_url(nid, host) if hw.get("api_port") and hw.get("api_lan") else None
+                url = self.node_url(nid, host, hw.get("slug") or r.get("display_slug") or "") \
+                    if hw.get("api_port") and hw.get("api_lan") else None
                 out.append({"hostname": hw.get("node_name") or host, "node_id": nid, "self": False,
                             "hw_display": hw, "display_url": url})
         return out

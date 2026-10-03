@@ -13,7 +13,9 @@ environment wins). A deployment's installer is what fills in its own values.
   API token file      THERMALRIGHT_API_TOKEN_FILE      service.api.token_file             /etc/thermalright-lcd/api.token
   API LAN listen      THERMALRIGHT_API_LAN             service.api.lan                    false
   URL prefix to strip THERMALRIGHT_API_BASE_PATH       service.api.base_path              ""
-  node page URL       THERMALRIGHT_NODE_URL_TEMPLATE   service.api.node_url_template      "" (e.g. "/display/{node_id}/")
+  node page URL       THERMALRIGHT_NODE_URL_TEMPLATE   service.api.node_url_template      "" (e.g. "/display/{slug}/")
+  display slug        THERMALRIGHT_DISPLAY_SLUG        service.api.slug                   <slug_prefix>-aio | <slug_prefix>-cpu-cooler
+  slug prefix         THERMALRIGHT_DISPLAY_SLUG_PREFIX service.api.slug_prefix            display
   peers files         -                                service.api.nodes_files            []
   node name           THERMALRIGHT_NODE_NAME           service.identity.node_name         hostname
   node id             THERMALRIGHT_NODE_ID             service.identity.node_id           hostname
@@ -52,7 +54,18 @@ def api(cfg: dict) -> dict:
         "base_path": (_env("THERMALRIGHT_API_BASE_PATH", a.get("base_path", "")) or "").rstrip("/"),
         "node_url_template": _env("THERMALRIGHT_NODE_URL_TEMPLATE", a.get("node_url_template", "")) or "",
         "nodes_files": list(a.get("nodes_files") or []),
+        "slug": _env("THERMALRIGHT_DISPLAY_SLUG", a.get("slug", "")) or "",
+        "slug_prefix": _env("THERMALRIGHT_DISPLAY_SLUG_PREFIX", a.get("slug_prefix", "display")) or "display",
     }
+
+
+def display_slug(cfg: dict, device_kind: str) -> str:
+    """Readable, URL-safe name for this display (e.g. "display-aio"); unique per proxy."""
+    import re
+    a = api(cfg)
+    slug = a["slug"] or f"{a['slug_prefix']}-{'cpu-cooler' if device_kind == 'digital' else 'aio'}"
+    slug = re.sub(r"[^a-z0-9-]+", "-", slug.lower()).strip("-")
+    return slug or "display"
 
 
 def identity(cfg: dict, device: dict, width: int, height: int) -> dict:
@@ -69,6 +82,7 @@ def identity(cfg: dict, device: dict, width: int, height: int) -> dict:
         "vid_pid": vid_pid,
         "resolution": f"{width}x{height}",
         "service": _env("THERMALRIGHT_SERVICE_NAME", ident.get("service", "thermalright-lcd-control")),
+        "slug": display_slug(cfg, ident.get("device_kind", "aio")),
     }
 
 

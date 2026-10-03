@@ -70,7 +70,7 @@ def main():
         dcfg["digital"] = {"controller_config": a.controller_config, "defaults": a.digital_defaults}
         dev = {"vid_pid": "0416:8001", "model": "Fake digital panel", "connected": True, "kind": "digital"}
         ident = settings.identity(dcfg, dev, 0, 0)
-        ident.update(device_kind="digital", resolution="segment")
+        ident.update(device_kind="digital", resolution="segment", slug=settings.display_slug(dcfg, "digital"))
         drt = DigitalRuntime(dcfg, dev, state, log, identity=ident)
         DigitalApi(drt, api_cfg, log).serve()
         log.info(f"fake digital panel; controller config {drt.controller_config}; UI http://127.0.0.1:{a.port}/")

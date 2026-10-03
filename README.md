@@ -317,6 +317,15 @@ main ones:
 | peers files | none |
 | OTLP endpoint | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 
+Each display also gets a readable **slug**, such as `display-aio` or
+`display-cpu-cooler`. It defaults to `<slug_prefix>-aio` for an image panel and
+`<slug_prefix>-cpu-cooler` for a digital panel. Override it with
+`service.api.slug`, `service.api.slug_prefix`, `THERMALRIGHT_DISPLAY_SLUG` or
+`THERMALRIGHT_DISPLAY_SLUG_PREFIX`. Reverse proxies and node lists use the slug in
+URLs, for example `node_url_template: /display/{slug}/`. Each slug must be unique
+behind one proxy. The node id stays internal: it appears in identity, metrics and
+discovery.
+
 `GET /api/status` returns an `identity` block with the node name, id and role,
 the device kind, model, USB id and resolution, and the service name. The same
 values become the OTLP resource attributes. Extra attributes can be added under
