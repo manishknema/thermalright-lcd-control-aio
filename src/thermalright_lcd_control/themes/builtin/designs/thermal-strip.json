@@ -59,10 +59,11 @@
    "color": "heat",
    "metric": "cpu.temp",
    "heat": [
-    35,
-    95
+    40,
+    90
    ],
-   "anchor": "ra"
+   "anchor": "ra",
+   "flash_at": 85
   },
   {
    "type": "bar",
@@ -75,8 +76,8 @@
    "max": 95,
    "color": "heat",
    "heat": [
-    35,
-    95
+    40,
+    90
    ],
    "radius": 5
   },

@@ -23,6 +23,13 @@ hand-tuned `layouts["480x480"]` widget lists instead.
 
 Widget keys common to all types: "type", "requires" ("gpu" | "rapl" | "llm",
 prefix "!" to negate), "hidden".
+Hot state (text, number): "flash_at": <value> — at or above it the widget is
+drawn inverted (pack `hot` plate, ink text) on alternate seconds, so an
+over-temperature reading blinks on the panel (e.g. 85 for an Intel package).
+
+Hierarchy rule for built-in designs: CPU temperature is the largest reading,
+then GPU temperature, then CPU watts; a wattage is never drawn larger than a
+temperature on the same design.
 Colours: a palette role (ink, panel, line, text, muted, accent1..3, ok, warn,
 hot), "#rrggbb", or "heat" (needs "metric" and optional "heat": [lo, hi]).
 Fonts: display | bold | body | mono.
@@ -281,13 +288,27 @@ class Renderer:
                 x += self.mark_inset("tl") if float(wd.get("y", 0)) < self.base[1] / 2 else self.mark_inset("bl")
         return self.X(x)
 
+    def _hot(self, wd, v) -> bool:
+        """Over the widget's flash_at threshold and in the 'on' half of the blink."""
+        fa = wd.get("flash_at")
+        return fa is not None and v is not None and v >= float(fa) and int(time.time()) % 2 == 0
+
+    def _plate(self, d, box):
+        pad = self.L(3)
+        d.rounded_rectangle([box[0] - pad, box[1] - pad, box[2] + pad, box[3] + pad], int(self.L(5)),
+                            fill=self.pack.rgb["hot"])
+
     def w_text(self, d, wd, vals, _):
         s = expand(str(wd.get("text", "")), vals, self.book)
         if wd.get("upper"):
             s = s.upper()
         v = self._num(vals, wd)
-        d.text((self._x(wd), self.Y(wd.get("y", 0))), s, font=self.font(wd.get("font", "bold"), wd.get("size", 12)),
-               fill=self.color(wd.get("color", "text"), wd, v), anchor=wd.get("anchor", "la"))
+        xy, f, anchor = (self._x(wd), self.Y(wd.get("y", 0))), self.font(wd.get("font", "bold"), wd.get("size", 12)), wd.get("anchor", "la")
+        col = self.color(wd.get("color", "text"), wd, v)
+        if self._hot(wd, v):
+            self._plate(d, d.textbbox(xy, s, font=f, anchor=anchor))
+            col = self.pack.rgb["ink"]
+        d.text(xy, s, font=f, fill=col, anchor=anchor)
 
     def w_number(self, d, wd, vals, _):
         v = M.value(vals, self.book, wd.get("metric", ""))
@@ -296,13 +317,20 @@ class Renderer:
         f = self.font(wd.get("font", "display"), wd.get("size", 40))
         x, y = self._x(wd), self.Y(wd.get("y", 0))
         col = self.color(wd.get("color", "text"), wd, num)
+        unit = wd.get("unit") if num is not None else None
+        uf = self.font(wd.get("unit_font", "bold"), wd.get("unit_size", 16))
+        ux = x + d.textlength(s, font=f) + self.L(wd.get("gap", 4))
+        ucol = self.color(wd.get("unit_color") or wd.get("color", "text"), wd, num)
+        if self._hot(wd, num):
+            box = d.textbbox((x, y), s, font=f, anchor="la")
+            if unit:
+                ub = d.textbbox((ux, y + self.L(wd.get("unit_dy", 0))), unit, font=uf, anchor="la")
+                box = (box[0], min(box[1], ub[1]), ub[2], max(box[3], ub[3]))
+            self._plate(d, box)
+            col = ucol = self.pack.rgb["ink"]
         d.text((x, y), s, font=f, fill=col, anchor="la")
-        unit = wd.get("unit")
-        if unit and num is not None:
-            ux = x + d.textlength(s, font=f) + self.L(wd.get("gap", 4))
-            d.text((ux, y + self.L(wd.get("unit_dy", 0))), unit,
-                   font=self.font(wd.get("unit_font", "bold"), wd.get("unit_size", 16)),
-                   fill=self.color(wd.get("unit_color") or wd.get("color", "text"), wd, num), anchor="la")
+        if unit:
+            d.text((ux, y + self.L(wd.get("unit_dy", 0))), unit, font=uf, fill=ucol, anchor="la")
 
     def w_arc(self, d, wd, vals, _, start=135.0, sweep=270.0):
         v = self._num(vals, wd)
