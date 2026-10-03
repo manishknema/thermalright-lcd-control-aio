@@ -1,0 +1,22 @@
+{
+ "schema": 1,
+ "id": "clock",
+ "order": 2,
+ "name": "Clock sweep",
+ "description": "Colour sweeps teal to amber every minute (on the small layout over the CPU temperature: it has no clock mode)",
+ "layouts": {
+  "small": {
+   "display_mode": "cpu_temp",
+   "colors": {
+    "default": "00d9d9-ffd900-seconds"
+   }
+  },
+  "big": {
+   "display_mode": "time",
+   "colors": {
+    "default": "00d9d9-ffd900-seconds"
+   }
+  }
+ },
+ "requires": []
+}

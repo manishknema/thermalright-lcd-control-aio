@@ -1,0 +1,36 @@
+{
+ "schema": 1,
+ "id": "heat",
+ "order": 0,
+ "name": "Heat",
+ "description": "CPU temperature, green when cool, red when hot",
+ "ranges": {
+  "cpu_min_temp": 40,
+  "cpu_max_temp": 90
+ },
+ "cycle_duration": 5,
+ "layouts": {
+  "small": {
+   "display_mode": "cpu_temp",
+   "colors": {
+    "default": "22c55e-ef4444-cpu_temp",
+    "groups": {
+     "cpu_led": "e5e7eb",
+     "celsius": "e5e7eb",
+     "fahrenheit": "e5e7eb"
+    }
+   }
+  },
+  "big": {
+   "display_mode": "time_cpu",
+   "colors": {
+    "default": "94a3b8",
+    "groups": {
+     "cpu_temp": "22c55e-ef4444-cpu_temp",
+     "cpu_usage": "22c55e-ef4444-cpu_usage"
+    }
+   }
+  }
+ },
+ "requires": []
+}

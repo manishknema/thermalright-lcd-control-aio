@@ -15,6 +15,15 @@ def run_service(config_dir: str):
     logger = get_service_logger()
     logger.info("Device controller service started")
 
+    info_file = os.path.join(config_dir, "device_info.yaml")
+    try:
+        with open(info_file, encoding="utf-8") as f:
+            kind = (yaml.safe_load(f) or {}).get("kind", "aio")
+    except OSError:
+        kind = "aio"
+    if kind == "digital":
+        return run_digital(config_dir, logger)
+
     try:
         loader = DeviceLoader(config_dir)
         device = loader.load_device()
@@ -81,3 +90,30 @@ def _start_telemetry(device, logger):
         telemetry.start(full.get("telemetry"), logger, identity=_identity(device, full.get("service") or {}))
     except Exception as e:
         logger.warning(f"OTLP telemetry not started: {e}")
+
+
+def run_digital(config_dir: str, logger, block: bool = True):
+    """Digital segment display: theme its controller's config through the API (no USB here)."""
+    from thermalright_lcd_control import settings
+    from thermalright_lcd_control.api.server import DigitalApi
+    from thermalright_lcd_control.digital.runtime import DigitalRuntime
+    with open(os.path.join(config_dir, "config_digital.yaml"), encoding="utf-8") as f:
+        full = yaml.safe_load(f) or {}
+    svc = dict(full.get("service") or {})
+    svc["digital"] = full.get("digital") or {}
+    device = {"vid_pid": "0416:8001", "model": svc.get("model") or "Thermalright digital 0416:8001",
+              "connected": True, "kind": "digital"}
+    ident = settings.identity(svc, device, 0, 0)
+    ident.update(device_kind="digital", resolution="segment")
+    rt = DigitalRuntime(svc, device, settings.state_dir(svc), logger, identity=ident)
+    try:
+        from thermalright_lcd_control.showcase import telemetry
+        telemetry.start(full.get("telemetry"), logger, identity=ident)
+    except Exception as e:
+        logger.warning(f"OTLP telemetry not started: {e}")
+    api_cfg = settings.api(svc)
+    DigitalApi(rt, api_cfg, logger).serve()
+    logger.info(f"digital display service: controller config {rt.controller_config}")
+    while block:
+        time.sleep(3600)
+    return rt

@@ -36,7 +36,7 @@ DATA = resources.files("thermalright_lcd_control") / "data"
 
 def detect() -> str:
     import usb.core
-    for vid, pid, _ in SUPPORTED_DEVICES:
+    for vid, pid in [(v, p) for v, p, _ in SUPPORTED_DEVICES] + [(0x0416, 0x8001)]:
         try:
             if usb.core.find(idVendor=vid, idProduct=pid) is not None:
                 return f"{vid:04x}:{pid:04x}"
@@ -69,9 +69,16 @@ def apply_sets(doc: dict, sets) -> None:
         node[parts[-1]] = yaml.safe_load(raw) if raw != "" else ""
 
 
+DIGITAL_IDS = {"0416:8001"}  # segment display: themed through its controller's config, not driven here
+
+
 def write_config(cfg_dir: Path, state_dir: str, vid_pid: str, panel: str, force: bool, sets=None) -> Path:
-    info = panel_info(vid_pid, panel)
-    size = f"{info['width']}{info['height']}"
+    if vid_pid in DIGITAL_IDS:
+        vid, pid = (int(x, 16) for x in vid_pid.split(":"))
+        info, size = {"kind": "digital", "vid": vid, "pid": pid}, "digital"
+    else:
+        info = panel_info(vid_pid, panel)
+        size = f"{info['width']}{info['height']}"
     cfg_dir.mkdir(parents=True, exist_ok=True)
     (cfg_dir / "device_info.yaml").write_text(yaml.safe_dump(info))
     cfg = cfg_dir / f"config_{size}.yaml"
@@ -84,7 +91,7 @@ def write_config(cfg_dir: Path, state_dir: str, vid_pid: str, panel: str, force:
         svc = doc["service"]
         if state_dir:
             svc["state_dir"] = state_dir
-        svc["model"] = f"Thermalright {vid_pid}"
+        svc["model"] = f"Thermalright {'digital ' if size == 'digital' else ''}{vid_pid}"
         tok = Path(svc["api"]["token_file"])
         if not tok.is_absolute() or str(tok).startswith("/etc/thermalright-lcd/"):
             svc["api"]["token_file"] = str(cfg_dir / "api.token")

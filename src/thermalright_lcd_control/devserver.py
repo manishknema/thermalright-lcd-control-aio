@@ -11,6 +11,10 @@ editor and API changes can be developed and tested on any machine.
   curl -H 'X-Display-Token: devtoken' http://127.0.0.1:7499/api/status
   open http://127.0.0.1:7499/   (use the key button to enter the dev token)
 
+--kind digital runs the segment-display service instead: presets are applied to
+--controller-config (default <state>/digital/config.json, seeded from
+--digital-defaults); point a controller at that file to watch it live.
+
 --frames-dir writes the latest frame as frame.png about once a second.
 --config takes a service config (the `service:` block of config_<w><h>.yaml);
 without it the packaged template for --size is used.
@@ -36,6 +40,9 @@ def main():
     ap.add_argument("--frames-dir", default="")
     ap.add_argument("--config", default="")
     ap.add_argument("--seconds", type=float, default=0, help="stop after N seconds (0 = run until Ctrl-C)")
+    ap.add_argument("--kind", choices=["aio", "digital"], default="aio")
+    ap.add_argument("--controller-config", default="")
+    ap.add_argument("--digital-defaults", default="")
     a = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -56,6 +63,19 @@ def main():
     tok_file.write_text(a.token)
     api_cfg = settings.api(cfg)
     api_cfg.update(port=a.port, bind="127.0.0.1", lan=False, token_file=str(tok_file) if a.token else "")
+    if a.kind == "digital":
+        from thermalright_lcd_control.api.server import DigitalApi
+        from thermalright_lcd_control.digital.runtime import DigitalRuntime
+        dcfg = dict(cfg)
+        dcfg["digital"] = {"controller_config": a.controller_config, "defaults": a.digital_defaults}
+        dev = {"vid_pid": "0416:8001", "model": "Fake digital panel", "connected": True, "kind": "digital"}
+        ident = settings.identity(dcfg, dev, 0, 0)
+        ident.update(device_kind="digital", resolution="segment")
+        drt = DigitalRuntime(dcfg, dev, state, log, identity=ident)
+        DigitalApi(drt, api_cfg, log).serve()
+        log.info(f"fake digital panel; controller config {drt.controller_config}; UI http://127.0.0.1:{a.port}/")
+        time.sleep(a.seconds or 10 ** 9)
+        return 0
     device = {"vid_pid": "0000:0000", "model": f"Fake panel {w}x{h}", "connected": True, "class": "FakeDevice"}
     ident = settings.identity(cfg, device, w, h)
     rt = Runtime(w, h, device, cfg, state, log, identity=ident)

@@ -1,0 +1,41 @@
+{
+ "schema": 1,
+ "id": "ops",
+ "order": 3,
+ "name": "Ops",
+ "description": "Cycles CPU and GPU temperature and load",
+ "requires": [
+  "gpu"
+ ],
+ "ranges": {
+  "cpu_min_temp": 40,
+  "cpu_max_temp": 90,
+  "gpu_min_temp": 35,
+  "gpu_max_temp": 85
+ },
+ "cycle_duration": 4,
+ "layouts": {
+  "small": {
+   "display_mode": "alternate_metrics",
+   "colors": {
+    "default": "22c55e-ef4444-cpu_temp",
+    "groups": {
+     "gpu_led": "a78bfa",
+     "cpu_led": "f59e0b"
+    }
+   }
+  },
+  "big": {
+   "display_mode": "metrics",
+   "colors": {
+    "default": "e5e7eb",
+    "groups": {
+     "cpu_temp": "22c55e-ef4444-cpu_temp",
+     "gpu_temp": "22c55e-ef4444-gpu_temp",
+     "cpu_usage": "60a5fa-f59e0b-cpu_usage",
+     "gpu_usage": "60a5fa-f59e0b-gpu_usage"
+    }
+   }
+  }
+ }
+}
