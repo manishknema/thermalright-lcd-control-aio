@@ -1,4 +1,88 @@
-# Thermalright LCD Control
+# Thermalright LCD Control — headless service + web dashboard
+
+> **This is the `vigyan` branch** of a fork of
+> [rejeb/thermalright-lcd-control](https://github.com/rejeb/thermalright-lcd-control).
+> `master` mirrors upstream unchanged. Everything below the line "Upstream README" is the
+> original project's documentation, kept for reference.
+
+## What it is for
+
+Thermalright AIO coolers with a built-in screen (USB `0416:5302`, `0418:5304`, `87AD:70DB`)
+can show live system data. On Windows the vendor app does this; on Linux, this project does.
+
+This branch turns it into something you **install once and forget, then control from a browser**:
+
+- **Always-on background service.** Starts at boot and drives the cooler's screen
+  continuously. It restarts itself on errors and waits for the display if it's unplugged.
+  Runs as an unprivileged user; no desktop session or GUI is needed, so it suits headless servers.
+- **Web dashboard** served by the service itself: see exactly what the screen is showing, pick a
+  design, switch colour packs, edit layouts, upload backgrounds and set rotation. **Changes reach
+  the screen within a second**, with no restart.
+- **Real hardware data.** CPU package temperature and **watts** (Intel RAPL), per-core load,
+  NVIDIA GPU temperature, power, utilisation and VRAM (read-only), RAM, NVMe temperature, clock.
+  Widgets that need missing hardware (for example the GPU) hide themselves.
+- **Seven built-in designs:** Core Gauge, Power Station, Thermal Strip, Core Grid, AI Node,
+  Minimal Clock, GPU Focus. **Six colour packs:** Slate, Midnight, Solar, Terminal, Arctic,
+  High Contrast. Any design works with any pack, and you can save your own.
+- **Optional metrics export:** the same readings over OpenTelemetry (OTLP) to your own
+  collector, if you run one.
+
+## What changed from upstream
+
+| | upstream | this branch |
+|---|---|---|
+| Interface | PySide6 desktop GUI | web dashboard (the PySide6 GUI was removed; every feature is mapped in [docs/GUI_FEATURE_INVENTORY.md](docs/GUI_FEATURE_INVENTORY.md)) |
+| Themes | background image + text at fixed positions | widget themes (gauges, rings, bars, sparklines, core grid); upstream themes still load |
+| Applying a theme | restart the service | live, within 1 s |
+| Runs as | your user, with the GUI | system service, unprivileged user |
+| Control | local GUI only | token-protected local API (`127.0.0.1:7431`) + web UI; LAN access off by default |
+| Packaging | uv | conda (Python 3.13) + `uv sync --frozen` from `uv.lock`; GUI-free headless install |
+
+## Quick start
+
+```bash
+# 1. interpreter + locked dependencies
+conda create -p /opt/thermalright-lcd/conda -c conda-forge --override-channels python=3.13
+UV_PROJECT_ENVIRONMENT=/opt/thermalright-lcd/venv uv sync --frozen --no-dev --no-editable \
+    --extra otel --python /opt/thermalright-lcd/conda/bin/python
+
+# 2. run the service (normally under systemd; see "Service, API and web UI" below)
+/opt/thermalright-lcd/venv/bin/thermalright-lcd-control-service --config /etc/thermalright-lcd
+
+# 3. open the dashboard
+xdg-open http://127.0.0.1:7431/      # token: /etc/thermalright-lcd/api.token
+```
+
+Check your sensors without touching the display: `thermalright-lcd-control-probe`.
+
+## Configuration
+
+Nothing is tied to a particular machine. Every path and name comes from the `service:` block of
+the config file or an environment variable, with neutral defaults:
+
+| Setting | Env var | Default |
+|---|---|---|
+| Node name / id / role | `THERMALRIGHT_NODE_NAME`, `THERMALRIGHT_NODE_ID`, `THERMALRIGHT_NODE_ROLE` | hostname |
+| State (your themes, uploads) | `THERMALRIGHT_STATE_DIR` | `/var/lib/thermalright-lcd` |
+| API address / port / LAN | `THERMALRIGHT_API_BIND`, `THERMALRIGHT_API_PORT`, `THERMALRIGHT_API_LAN` | `127.0.0.1`, `7431`, off |
+| API token file | `THERMALRIGHT_API_TOKEN_FILE` | `/etc/thermalright-lcd/api.token` |
+| URL prefix behind a reverse proxy | `THERMALRIGHT_API_BASE_PATH` | none |
+| Service name | `THERMALRIGHT_SERVICE_NAME` | `thermalright-lcd-control` |
+| Metrics export | `OTEL_EXPORTER_OTLP_ENDPOINT` | off |
+
+Deployment tooling can set all of these; one example deployment (systemd unit, udev rule,
+reverse-proxy route, node discovery) is described under "Vigyan packaging" below.
+
+## Security
+
+The API needs a bearer token and listens on loopback only unless you turn LAN access on. The
+service needs only the USB display (granted through a udev rule) and read access to RAPL
+energy counters (granted when it starts). It never needs root while running.
+
+---
+
+# Upstream README
+
 
 A Linux application for controlling Thermalright LCD displays with an intuitive graphical interface.
 
