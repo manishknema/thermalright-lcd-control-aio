@@ -1,16 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright © 2025 Rejeb Ben Rejeb
 import pathlib
-import threading
 import time
 from abc import abstractmethod, ABC
 
+import numpy as np
 import usb
+import yaml
 from PIL import Image
 
 from thermalright_lcd_control.device_controller.display.config_loader import ConfigLoader
 from thermalright_lcd_control.device_controller.display.generator import DisplayGenerator
 from thermalright_lcd_control.common.logging_config import LoggerConfig
+from thermalright_lcd_control.showcase.stats import STATS
+
+STATS_LOG_INTERVAL = 60.0
 
 
 class DisplayDevice(ABC):
@@ -43,6 +47,13 @@ class DisplayDevice(ABC):
         return f"VID: {self.vid}, PID: {self.pid} ({self.width}x{self.height})"
 
     def _build_generator(self) -> DisplayGenerator:
+        with open(self.config_file, "r", encoding="utf-8") as f:
+            raw = yaml.safe_load(f) or {}
+        showcase = raw.get("showcase") or {}
+        if showcase.get("enabled"):
+            from thermalright_lcd_control.showcase.renderer import ShowcaseGenerator
+            self.logger.info(f"Showcase layout enabled ({self.width}x{self.height})")
+            return ShowcaseGenerator(self.width, self.height, showcase)
         config_loader = ConfigLoader()
         config = config_loader.load_config(self.config_file, self.width, self.height)
         return DisplayGenerator(config)
@@ -61,24 +72,14 @@ class DisplayDevice(ABC):
         else:
             return self._generator
 
-    def _encode_image(self, img: Image) -> bytearray:
-        width, height = img.size
-
-        coords = [(x, y) for x in range(width) for y in range(height - 1, -1, -1)]
-
-        out = bytearray()
-
-        for i, (x, y) in enumerate(coords, start=1):
-            if i % height == 0:
-                out.extend((0x00, 0x00))
-            else:
-                r, g, b = img.getpixel((x, y))
-                val565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
-                lo = val565 & 0xFF
-                hi = (val565 >> 8) & 0xFF
-                out.extend((lo, hi))
-
-        return out
+    def _encode_image(self, img: Image) -> bytes:
+        """RGB565 little-endian, column-major, bottom-to-top; the last pixel of
+        every column is sent as 0x0000 (device framing quirk kept from upstream)."""
+        a = np.asarray(img.convert("RGB"), dtype=np.uint16)
+        v = ((a[..., 0] & 0xF8) << 8) | ((a[..., 1] & 0xFC) << 3) | (a[..., 2] >> 3)
+        cols = v[::-1, :].T.copy()  # (width, height): x-major, y from bottom to top
+        cols[:, -1] = 0
+        return cols.astype("<u2").tobytes()
 
     @abstractmethod
     def get_header(self, *args, **kwargs):
@@ -108,14 +109,26 @@ class DisplayDevice(ABC):
         self._run()
 
     def _run(self):
-
-        img, delay_time = self._get_generator().get_frame_with_duration()
-        header = self.get_header()
-        img_bytes = header + self._encode_image(img)
-        frame_packets = self._prepare_frame_packets(img_bytes)
-        for packet in frame_packets:
-            self.send_packet(packet)
-        threading.Timer(interval=delay_time, function=self._run).start()
+        """Frame loop. A write error is fatal on purpose: the unit's Restart=always
+        re-opens the device after a replug instead of spinning on a dead handle."""
+        next_log = time.monotonic() + STATS_LOG_INTERVAL
+        while True:
+            t0 = time.monotonic()
+            img, delay_time = self._get_generator().get_frame_with_duration()
+            img_bytes = self.get_header() + self._encode_image(img)
+            try:
+                for packet in self._prepare_frame_packets(img_bytes):
+                    self.send_packet(packet)
+            except Exception:
+                STATS.error()
+                self.logger.error(f"LCD write failed after frames_sent={STATS.frames_sent}", exc_info=True)
+                raise
+            STATS.frame((time.monotonic() - t0) * 1000.0)
+            if time.monotonic() >= next_log:
+                next_log += STATS_LOG_INTERVAL
+                self.logger.info(f"lcd frames_sent={STATS.frames_sent} frame_errors={STATS.frame_errors} "
+                                 f"last_frame_ms={STATS.last_frame_ms:.1f}")
+            time.sleep(max(0.0, delay_time - (time.monotonic() - t0)))
 
     @abstractmethod
     def send_packet(self, packet: bytes):

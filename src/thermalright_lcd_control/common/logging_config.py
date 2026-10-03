@@ -106,10 +106,10 @@ class LoggerConfig:
         log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
         logger.setLevel(getattr(logging, log_level, logging.INFO))
 
-        if LoggerConfig.is_development_mode():
-            # Development mode: console output
+        if LoggerConfig.is_development_mode() or os.getenv('JOURNAL_STREAM'):
+            # Development mode, or stdout is journald (systemd unit): console output
             handler = LoggerConfig._create_console_handler()
-            logger.info("Device controller logger configured for development mode (console)")
+            logger.info("Device controller logger configured for console/journal output")
         else:
             # Production mode: file logging
             handler = LoggerConfig._create_file_handler(LoggerConfig.SERVICE_LOG_FILE)
