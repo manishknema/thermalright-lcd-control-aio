@@ -40,37 +40,39 @@ This branch turns it into something you **install once and forget, then control 
 
 ## Quick start
 
-The release wheel is the main way to install. It holds everything the service
-needs at run time: the web UI bundle, the 7 designs, the theme packs, the config
-templates and the udev rule. You don't need a source checkout. The wheel is built
-reproducibly (hatchling is pinned), so a deployment can pin it by sha256.
-
 ```bash
-# system service (root): venv under /opt/thermalright-lcd, config in /etc/thermalright-lcd,
-# state in /var/lib/thermalright-lcd, unprivileged user "thermalright", udev rule, systemd unit
-sudo scripts/install-service.sh --wheel thermalright_lcd_control-1.5.0-py3-none-any.whl
-sudo systemctl enable --now thermalright-lcd-control
-
-# or as a plain user, everything under $HOME (user systemd unit)
-scripts/install-service.sh --user --wheel <wheel file or URL>
-systemctl --user enable --now thermalright-lcd-control
-
-xdg-open http://127.0.0.1:7431/      # token: <config dir>/api.token
+sudo deploy/install.sh                  # asks where src, env, config and state go; service user; unit; udev
+sudo deploy/install.sh --yes --start    # same with defaults, then start
+deploy/install.sh --user --yes --start  # per-user install under $HOME (user systemd unit)
+xdg-open http://127.0.0.1:7431/         # token: <config dir>/api.token
 ```
 
-`--prefix`, `--config-dir` and `--state-dir` (or `THERMALRIGHT_PREFIX`,
-`THERMALRIGHT_CONFIG_DIR` and `THERMALRIGHT_STATE_DIR`) put each part wherever
-you want it.
+The installer keeps a source checkout (`--src`, optionally pinned with `--ref`). It
+builds the venv from it with `uv sync --frozen`, using an interpreter from a conda
+env (`--conda`) or a uv-managed CPython 3.13. Then it writes the config and,
+optionally, the service user, udev rule and systemd unit. Each location is asked
+for interactively or set with flags/env (`THERMALRIGHT_SRC`, `THERMALRIGHT_VENV`,
+`THERMALRIGHT_CONFIG_DIR`, `THERMALRIGHT_STATE_DIR`). `--set KEY=VALUE` overrides
+any config value. Run `deploy/install.sh --help` for the full list.
 
-Without `install-service.sh` the steps are: install the wheel into any venv (for
-example `uv pip install 'thermalright_lcd_control-*.whl[otel,video]'`), then run
-`thermalright-lcd-control-init --config-dir DIR --state-dir DIR`. Use
-`--print-udev` to get the udev rule and `--print-unit system|user` to get a
-systemd unit.
+**Without the installer:** build a wheel (`uv build --wheel`; hatchling is pinned,
+so the build is reproducible), install it into any venv, then run
+`thermalright-lcd-control-init --config-dir DIR --state-dir DIR`. Its
+`--print-udev` and `--print-unit system|user` options give you the udev rule and
+a systemd unit.
 
-**From source (secondary):** run `scripts/install-service.sh` without `--wheel`
-and it builds the wheel from this checkout. For a locked environment, use
-`uv sync --frozen --no-dev --extra otel --extra video`.
+**Deployment kit:**
+
+- `deploy/nginx/install-nginx.sh` puts the UI and API behind any nginx. Reads stay
+  open; writes need a login (htpasswd, or `auth_request` to your own auth
+  service, such as a PAM checker), are rate limited, and must use HTTPS.
+- `deploy/portal/node-card.html` is a read-only status card you can embed in any
+  portal page.
+- `thermalright-lcd-control-dev` runs everything against a fake panel for
+  development.
+- `skills/thermalright-lcd/SKILL.md` teaches a coding agent to install, test,
+  extend and ship this project. It is linked from `.agents/skills`,
+  `.claude/skills` and `.codex/skills`.
 
 Check your sensors without touching the display: `thermalright-lcd-control-probe`.
 
@@ -82,8 +84,8 @@ the config file or an environment variable, with neutral defaults:
 | Setting | Env var | Default |
 |---|---|---|
 | Node name / id / role | `THERMALRIGHT_NODE_NAME`, `THERMALRIGHT_NODE_ID`, `THERMALRIGHT_NODE_ROLE` | hostname |
-| Install prefix (venv) | `THERMALRIGHT_PREFIX` (install-service.sh) | `/opt/thermalright-lcd`; `--user`: `~/.local/share/thermalright-lcd` |
-| Config dir (defaults, token) | `THERMALRIGHT_CONFIG_DIR` (install-service.sh) | `/etc/thermalright-lcd`; `--user`: `~/.config/thermalright-lcd` |
+| Source checkout / venv / conda | `THERMALRIGHT_SRC`, `THERMALRIGHT_VENV`, `THERMALRIGHT_CONDA` (deploy/install.sh) | `/opt/thermalright-lcd/{src,venv}`, no conda; `--user`: `~/.local/share/thermalright-lcd/…` |
+| Config dir (defaults, token) | `THERMALRIGHT_CONFIG_DIR` (deploy/install.sh) | `/etc/thermalright-lcd`; `--user`: `~/.config/thermalright-lcd` |
 | State (your themes, uploads) | `THERMALRIGHT_STATE_DIR` | `/var/lib/thermalright-lcd`; `--user`: `~/.local/state/thermalright-lcd` |
 | API address / port / LAN | `THERMALRIGHT_API_BIND`, `THERMALRIGHT_API_PORT`, `THERMALRIGHT_API_LAN` | `127.0.0.1`, `7431`, off |
 | API token file | `THERMALRIGHT_API_TOKEN_FILE` | `/etc/thermalright-lcd/api.token` |

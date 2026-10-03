@@ -40,6 +40,7 @@ otel = [
 thermalright-lcd-control-service = "thermalright_lcd_control.service:main"
 thermalright-lcd-control-probe = "thermalright_lcd_control.showcase.probe:main"
 thermalright-lcd-control-init = "thermalright_lcd_control.init_config:main"
+thermalright-lcd-control-dev = "thermalright_lcd_control.devserver:main"
 
 # Configuration Hatchling
 [tool.hatch.build.targets.wheel]
