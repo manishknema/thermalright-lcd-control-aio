@@ -1,0 +1,147 @@
+{
+ "schema": 2,
+ "id": "core-gauge",
+ "name": "Core Gauge",
+ "description": "CPU package temperature arc, CPU watts, GPU and NVMe summary",
+ "order": 0,
+ "base": [
+  320,
+  240
+ ],
+ "mark_corner": "br",
+ "background": {
+  "type": "color"
+ },
+ "device": {
+  "rotation": 0,
+  "brightness": 100,
+  "refresh": 1.0
+ },
+ "widgets": [
+  {
+   "type": "arc",
+   "metric": "cpu.temp",
+   "cx": 92,
+   "cy": 122,
+   "r": 74,
+   "width": 14,
+   "min": 20,
+   "max": 100,
+   "color": "heat",
+   "heat": [
+    35,
+    95
+   ]
+  },
+  {
+   "type": "text",
+   "x": 92,
+   "y": 112,
+   "text": "{cpu.temp:.0f}°",
+   "size": 46,
+   "font": "bold",
+   "color": "text",
+   "anchor": "mm"
+  },
+  {
+   "type": "text",
+   "x": 92,
+   "y": 150,
+   "text": "CPU PACKAGE",
+   "size": 10,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm"
+  },
+  {
+   "type": "text",
+   "x": 92,
+   "y": 214,
+   "text": "{cpu.freq:.2f} GHz · {cpu.load:.0f}%",
+   "size": 12,
+   "font": "body",
+   "color": "muted",
+   "anchor": "mm"
+  },
+  {
+   "type": "text",
+   "x": 190,
+   "y": 26,
+   "text": "CPU power",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted"
+  },
+  {
+   "type": "number",
+   "metric": "cpu.power",
+   "x": 190,
+   "y": 40,
+   "size": 52,
+   "font": "display",
+   "color": "accent1",
+   "unit": "W",
+   "unit_size": 18,
+   "unit_dy": 36,
+   "gap": 4
+  },
+  {
+   "type": "text",
+   "x": 190,
+   "y": 120,
+   "text": "GPU",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 190,
+   "y": 134,
+   "text": "{gpu.temp:.0f}°  {gpu.power:.0f}W",
+   "size": 20,
+   "font": "bold",
+   "color": "text",
+   "requires": "gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "gpu.util",
+   "x": 190,
+   "y": 166,
+   "w": 112,
+   "h": 8,
+   "max": 100,
+   "color": "accent2",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 190,
+   "y": 186,
+   "text": "NVMe",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted"
+  },
+  {
+   "type": "text",
+   "x": 302,
+   "y": 184,
+   "text": "{nvme.temp:.0f}°",
+   "size": 14,
+   "font": "bold",
+   "color": "heat",
+   "metric": "nvme.temp",
+   "heat": [
+    30,
+    75
+   ],
+   "anchor": "ra"
+  }
+ ]
+}

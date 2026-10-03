@@ -217,22 +217,11 @@ install_application() {
     log_info "Virtual environment created with $VENV_PYTHON_VERSION"
 
     # Verify installation
-    if [ -f "$VENV_DIR/bin/thermalright-lcd-control-gui" ]; then
+    if [ -f "$VENV_DIR/bin/thermalright-lcd-control-service" ]; then
         log_info "Application and all dependencies installed successfully"
     else
         log_error "Application scripts not found after installation"
         exit 1
-    fi
-
-    # Copy gui launcher script
-    if [ -f "usr/bin/$APP_NAME-gui" ]; then
-        cp "usr/bin/$APP_NAME-gui" "$BIN_DIR/"
-
-        # Update paths in the launcher script
-        sed -i "s|@user_home@|$USER_HOME|g" "$BIN_DIR/$APP_NAME-gui"
-
-        chmod 755 "$BIN_DIR/$APP_NAME-gui"
-        log_info "Launcher script installed"
     fi
 
     # Copy service launcher script
@@ -348,16 +337,6 @@ setup_user_configs() {
         cp -r "resources/config" "$CONFIG_DIR/"
     fi
 
-    if [ -f "resources/gui_config.yaml" ]; then
-        cp "resources/gui_config.yaml" "$CONFIG_DIR/"
-
-        # Update paths in GUI config
-        sed -i "s|themes_dir: \"./resources/themes/presets\"|themes_dir: \"$CONFIG_DIR/themes/presets\"|g" "$CONFIG_DIR/gui_config.yaml"
-        sed -i "s|backgrounds_dir: \"./resources/themes/backgrounds\"|backgrounds_dir: \"$CONFIG_DIR/themes/backgrounds\"|g" "$CONFIG_DIR/gui_config.yaml"
-        sed -i "s|foregrounds_dir: \"./resources/themes/foregrounds\"|foregrounds_dir: \"$CONFIG_DIR/themes/foregrounds\"|g" "$CONFIG_DIR/gui_config.yaml"
-        sed -i "s|service_config: \"./resources/config\"|service_config: \"$CONFIG_DIR/config\"|g" "$CONFIG_DIR/gui_config.yaml"
-    fi
-
     # Copy themes to user directory
     if [ -d "resources/themes" ]; then
         cp -R "resources/themes" "$CONFIG_DIR/"
@@ -425,8 +404,6 @@ main() {
     # Install application in user space
     install_application
     setup_user_configs
-    install_desktop_entry
-
     setup_device
 
     local setup_status=$?
@@ -451,14 +428,14 @@ main() {
        log_info "  Service: $SYSTEMD_SYSTEM_DIR/$APP_NAME.service"
        log_info ""
        log_info "Status:"
-       log_info "  ✅ GUI application installed (user execution)"
+       log_info "  ✅ Web UI served by the service (http://127.0.0.1:7431/)"
        log_info "  ✅ System service installed (root execution)"
        log_info "  ✅ Dependencies managed with uv"
        log_info "  ✅ Python version auto-detected from pyproject.toml"
        log_info "  ✅ Theme and config paths updated"
        log_info ""
        log_info "Usage:"
-       log_info "  GUI: $APP_NAME (as user $ACTUAL_USER)"
+       log_info "  Web UI: http://127.0.0.1:7431/ (config_<w><h>.yaml service.api)"
        log_info "  Service: sudo systemctl start $APP_NAME"
        log_info "  Status: sudo systemctl status $APP_NAME"
     else

@@ -1,0 +1,140 @@
+{
+ "schema": 2,
+ "id": "power-station",
+ "name": "Power Station",
+ "description": "System draw (CPU package + GPU) with a 60 s sparkline",
+ "order": 1,
+ "base": [
+  320,
+  240
+ ],
+ "mark_corner": "tr",
+ "background": {
+  "type": "color"
+ },
+ "device": {
+  "rotation": 0,
+  "brightness": 100,
+  "refresh": 1.0
+ },
+ "widgets": [
+  {
+   "type": "text",
+   "x": 16,
+   "y": 14,
+   "text": "System draw",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted"
+  },
+  {
+   "type": "number",
+   "metric": "sys.power",
+   "x": 16,
+   "y": 28,
+   "size": 64,
+   "font": "display",
+   "color": "text",
+   "unit": "W",
+   "unit_size": 22,
+   "unit_color": "muted",
+   "unit_dy": 42,
+   "gap": 6
+  },
+  {
+   "type": "text",
+   "x": 208,
+   "y": 38,
+   "text": "CPU",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "accent1"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 36,
+   "text": "{cpu.power:.0f} W",
+   "size": 17,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra"
+  },
+  {
+   "type": "bar",
+   "metric": "cpu.power",
+   "x": 208,
+   "y": 60,
+   "w": 96,
+   "h": 6,
+   "max": 300,
+   "color": "accent1"
+  },
+  {
+   "type": "text",
+   "x": 208,
+   "y": 78,
+   "text": "GPU",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "accent2",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 76,
+   "text": "{gpu.power:.0f} W",
+   "size": 17,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra",
+   "requires": "gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "gpu.power",
+   "x": 208,
+   "y": 100,
+   "w": 96,
+   "h": 6,
+   "max": 300,
+   "color": "accent2",
+   "requires": "gpu"
+  },
+  {
+   "type": "sparkline",
+   "metric": "sys.power",
+   "x": 16,
+   "y": 132,
+   "w": 288,
+   "h": 70,
+   "seconds": 60,
+   "color": "accent1",
+   "fill": true
+  },
+  {
+   "type": "text",
+   "x": 16,
+   "y": 214,
+   "text": "System draw · last 60 s",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 212,
+   "text": "peak {sys.power@peak:.0f} W",
+   "size": 11,
+   "font": "body",
+   "color": "muted",
+   "anchor": "ra"
+  }
+ ]
+}

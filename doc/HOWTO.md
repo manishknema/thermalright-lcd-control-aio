@@ -20,7 +20,7 @@ Configuration files:
 Main class:
 
 - service.py: the main class that starts the device_controller.
-- main_gui.py: the main class that starts the gui.
+- (removed) main_gui.py: the PySide6 GUI was replaced by the web UI served by the service (see README, Vigyan packaging).
 
 I also added two bash scripts:
 

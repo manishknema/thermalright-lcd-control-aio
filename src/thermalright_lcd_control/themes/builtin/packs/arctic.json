@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "id": "arctic",
+  "name": "Arctic",
+  "ground": "light",
+  "colors": {
+    "ink": "#f4f7fb",
+    "panel": "#e6ecf4",
+    "line": "#cdd6e3",
+    "text": "#0f1b2d",
+    "muted": "#5b6b82",
+    "accent1": "#0284c7",
+    "accent2": "#0d9488",
+    "accent3": "#7c3aed",
+    "ok": "#16a34a",
+    "warn": "#d97706",
+    "hot": "#dc2626"
+  },
+  "fonts": {
+    "display": null,
+    "bold": null,
+    "body": null,
+    "mono": null
+  },
+  "mark": null,
+  "default_mark": "none"
+}

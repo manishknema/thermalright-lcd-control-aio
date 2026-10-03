@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "id": "contrast",
+  "name": "High contrast",
+  "ground": "dark",
+  "colors": {
+    "ink": "#000000",
+    "panel": "#111111",
+    "line": "#333333",
+    "text": "#ffffff",
+    "muted": "#bbbbbb",
+    "accent1": "#ffd400",
+    "accent2": "#00e5ff",
+    "accent3": "#ff6bd6",
+    "ok": "#00ff66",
+    "warn": "#ffd400",
+    "hot": "#ff3b30"
+  },
+  "fonts": {
+    "display": null,
+    "bold": null,
+    "body": null,
+    "mono": null
+  },
+  "mark": null,
+  "default_mark": "none"
+}

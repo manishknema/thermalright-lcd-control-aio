@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "id": "slate",
+  "name": "Slate",
+  "ground": "dark",
+  "colors": {
+    "ink": "#0c0e14",
+    "panel": "#181c26",
+    "line": "#2c3240",
+    "text": "#eceef3",
+    "muted": "#8a92a2",
+    "accent1": "#f59e0b",
+    "accent2": "#2dd4bf",
+    "accent3": "#a78bfa",
+    "ok": "#22c55e",
+    "warn": "#f59e0b",
+    "hot": "#ef4444"
+  },
+  "fonts": {
+    "display": null,
+    "bold": null,
+    "body": null,
+    "mono": null
+  },
+  "mark": null,
+  "default_mark": "none"
+}

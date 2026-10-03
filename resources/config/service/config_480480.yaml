@@ -1,14 +1,35 @@
-# Showcase layout for 320x320 panels (Vigyan packaging).
-# `showcase.enabled: true` draws the hardware dashboard; set it false (or let the
-# GUI rewrite this file) to fall back to the upstream theme in `display:`.
-# `telemetry` sends the same readings as OTLP metrics to the node-local collector.
-showcase:
-  enabled: true
-  refresh_seconds: 1.0
-  title: '{hostname}'
-  temp_warn: 70
-  temp_crit: 85
-  rotation: 0
+# Service defaults for 480x480 panels (Vigyan packaging). Installed root-owned
+# under /etc/vigyan/thermalright/aio/; the service never writes here. Everything a
+# user changes from the web UI lives in service.state_dir (owned by the service user).
+#
+# service.api      local HTTP API + web UI. Loopback only unless lan: true; every
+#                  /api/* call needs the token in token_file (the gateway injects it).
+# service.defaults first-run selection: a built-in design + a theme pack.
+# service.extras   optional readings: llm.tokens_s from a Prometheus counter and
+#                  svc.<name> health dots (http(s) URL or tcp://host:port).
+# telemetry        the same readings as OTLP metrics to the node-local collector.
+# display          upstream theme, used only when the service: block is removed.
+service:
+  state_dir: /var/lib/vigyan/thermalright
+  model: ''
+  api:
+    enabled: true
+    bind: 127.0.0.1
+    port: 7431
+    lan: false
+    token_file: /etc/vigyan/secret.d/thermalright-api.token
+  defaults:
+    design: ai-node
+    pack: slate
+    mark: {}
+    rotate: []
+  extras:
+    tokens:
+      url: ''
+      metric: vllm:generation_tokens_total
+    services: {}
+  legacy_theme_dirs: []
+  pack_dirs: []
 telemetry:
   enabled: true
   otlp_endpoint: http://127.0.0.1:4318

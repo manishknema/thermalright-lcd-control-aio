@@ -1,0 +1,210 @@
+{
+ "schema": 2,
+ "id": "thermal-strip",
+ "name": "Thermal Strip",
+ "description": "CPU, GPU, NVMe temperature and RAM as heat-coloured bars",
+ "order": 2,
+ "base": [
+  320,
+  240
+ ],
+ "mark_corner": "tr",
+ "background": {
+  "type": "color"
+ },
+ "device": {
+  "rotation": 0,
+  "brightness": 100,
+  "refresh": 1.0
+ },
+ "widgets": [
+  {
+   "type": "text",
+   "x": 16,
+   "y": 14,
+   "text": "Thermals",
+   "upper": true,
+   "font": "bold",
+   "size": 13,
+   "color": "text"
+  },
+  {
+   "type": "clock",
+   "x": 304,
+   "y": 12,
+   "format": "%H:%M",
+   "size": 13,
+   "font": "mono",
+   "color": "muted",
+   "anchor": "ra",
+   "avoid_mark": true
+  },
+  {
+   "type": "text",
+   "x": 16,
+   "y": 44,
+   "text": "CPU",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 40,
+   "text": "{cpu.temp:.0f}°C",
+   "size": 22,
+   "font": "bold",
+   "color": "heat",
+   "metric": "cpu.temp",
+   "heat": [
+    35,
+    95
+   ],
+   "anchor": "ra"
+  },
+  {
+   "type": "bar",
+   "metric": "cpu.temp",
+   "x": 16,
+   "y": 66,
+   "w": 288,
+   "h": 10,
+   "min": 35,
+   "max": 95,
+   "color": "heat",
+   "heat": [
+    35,
+    95
+   ],
+   "radius": 5
+  },
+  {
+   "type": "text",
+   "x": 16,
+   "y": 91,
+   "text": "GPU",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 87,
+   "text": "{gpu.temp:.0f}°C",
+   "size": 22,
+   "font": "bold",
+   "color": "heat",
+   "metric": "gpu.temp",
+   "heat": [
+    35,
+    90
+   ],
+   "anchor": "ra",
+   "requires": "gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "gpu.temp",
+   "x": 16,
+   "y": 113,
+   "w": 288,
+   "h": 10,
+   "min": 35,
+   "max": 90,
+   "color": "heat",
+   "heat": [
+    35,
+    90
+   ],
+   "radius": 5,
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 16,
+   "y": 138,
+   "text": "NVMe",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 134,
+   "text": "{nvme.temp:.0f}°C",
+   "size": 22,
+   "font": "bold",
+   "color": "heat",
+   "metric": "nvme.temp",
+   "heat": [
+    30,
+    75
+   ],
+   "anchor": "ra"
+  },
+  {
+   "type": "bar",
+   "metric": "nvme.temp",
+   "x": 16,
+   "y": 160,
+   "w": 288,
+   "h": 10,
+   "min": 30,
+   "max": 75,
+   "color": "heat",
+   "heat": [
+    30,
+    75
+   ],
+   "radius": 5
+  },
+  {
+   "type": "text",
+   "x": 16,
+   "y": 185,
+   "text": "RAM",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 181,
+   "text": "{ram.pct:.0f}%",
+   "size": 22,
+   "font": "bold",
+   "color": "accent3",
+   "metric": "ram.pct",
+   "heat": [
+    0,
+    100
+   ],
+   "anchor": "ra"
+  },
+  {
+   "type": "bar",
+   "metric": "ram.pct",
+   "x": 16,
+   "y": 207,
+   "w": 288,
+   "h": 10,
+   "min": 0,
+   "max": 100,
+   "color": "accent3",
+   "heat": [
+    0,
+    100
+   ],
+   "radius": 5
+  }
+ ]
+}

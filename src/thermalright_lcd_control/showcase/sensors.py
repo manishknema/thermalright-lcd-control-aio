@@ -51,6 +51,8 @@ class GpuSample:
     utilization: Optional[float] = None
     memory_used: Optional[int] = None
     memory_total: Optional[int] = None
+    clock_mhz: Optional[float] = None
+    fan_percent: Optional[float] = None
 
 
 @dataclass
@@ -217,6 +219,10 @@ class _Nvml:
             m = self._q(nv.nvmlDeviceGetMemoryInfo, h)
             if m is not None:
                 s.memory_used, s.memory_total = int(m.used), int(m.total)
+            clk = self._q(nv.nvmlDeviceGetClockInfo, h, nv.NVML_CLOCK_GRAPHICS)
+            s.clock_mhz = float(clk) if clk is not None else None
+            fan = self._q(nv.nvmlDeviceGetFanSpeed, h)
+            s.fan_percent = float(fan) if fan is not None else None
             out.append(s)
         return out
 
@@ -264,8 +270,14 @@ class HardwareSampler:
         )
 
 
+HISTORY_SECONDS = 120
+
+
 class SamplerThread:
-    """One background sampler per process; the LCD and OTLP read its latest Sample."""
+    """One background sampler per process; the LCD and OTLP read its latest Sample.
+
+    `history` keeps the last HISTORY_SECONDS of every numeric metric id (see
+    themes.metrics) for sparkline widgets."""
 
     _instance = None
     _lock = threading.Lock()
@@ -274,6 +286,8 @@ class SamplerThread:
         self.interval = max(0.5, interval)
         self.sampler = HardwareSampler()
         self.latest = self.sampler.sample()
+        self.history = {}
+        self.listeners = []  # callables(sample) run after each sample (history, extras)
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._loop, name="hw-sampler", daemon=True)
         self._thread.start()
@@ -290,4 +304,9 @@ class SamplerThread:
             try:
                 self.latest = self.sampler.sample()
             except Exception:
-                pass  # a transient sysfs/NVML error keeps the previous sample
+                continue  # a transient sysfs/NVML error keeps the previous sample
+            for fn in list(self.listeners):
+                try:
+                    fn(self.latest)
+                except Exception:
+                    pass

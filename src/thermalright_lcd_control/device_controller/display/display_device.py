@@ -6,7 +6,6 @@ from abc import abstractmethod, ABC
 
 import numpy as np
 import usb
-import yaml
 from PIL import Image
 
 from thermalright_lcd_control.device_controller.display.config_loader import ConfigLoader
@@ -19,6 +18,7 @@ STATS_LOG_INTERVAL = 60.0
 
 class DisplayDevice(ABC):
     _generator: DisplayGenerator = None
+    frame_source = None  # themes.runtime.Runtime when the service runs with a state dir
     dev = None
     report_id = bytes([0x00])
     vid = None
@@ -37,7 +37,7 @@ class DisplayDevice(ABC):
         self.config_file = f"{config_dir}/config_{width}{height}.yaml"
         self.last_modified = pathlib.Path(self.config_file).stat().st_mtime_ns
         self.logger = self.logger = LoggerConfig.setup_service_logger()
-        self._generator = self._build_generator()
+        self._generator = None  # built lazily: a Runtime frame source replaces it
         self.logger.debug(f"DisplayDevice initialized with header: {self.header}")
 
     def __getitem__(self, __name):
@@ -47,18 +47,13 @@ class DisplayDevice(ABC):
         return f"VID: {self.vid}, PID: {self.pid} ({self.width}x{self.height})"
 
     def _build_generator(self) -> DisplayGenerator:
-        with open(self.config_file, "r", encoding="utf-8") as f:
-            raw = yaml.safe_load(f) or {}
-        showcase = raw.get("showcase") or {}
-        if showcase.get("enabled"):
-            from thermalright_lcd_control.showcase.renderer import ShowcaseGenerator
-            self.logger.info(f"Showcase layout enabled ({self.width}x{self.height})")
-            return ShowcaseGenerator(self.width, self.height, showcase)
         config_loader = ConfigLoader()
         config = config_loader.load_config(self.config_file, self.width, self.height)
         return DisplayGenerator(config)
 
     def _get_generator(self) -> DisplayGenerator:
+        if self.frame_source is not None:
+            return self.frame_source
         if self._generator is None:
             self.logger.info(f"No generator found, reloading from {self.config_file}")
             self._generator = self._build_generator()
@@ -124,11 +119,19 @@ class DisplayDevice(ABC):
                 self.logger.error(f"LCD write failed after frames_sent={STATS.frames_sent}", exc_info=True)
                 raise
             STATS.frame((time.monotonic() - t0) * 1000.0)
+            if self.frame_source is not None:
+                self.frame_source.frame_sent()
             if time.monotonic() >= next_log:
                 next_log += STATS_LOG_INTERVAL
                 self.logger.info(f"lcd frames_sent={STATS.frames_sent} frame_errors={STATS.frame_errors} "
                                  f"last_frame_ms={STATS.last_frame_ms:.1f}")
-            time.sleep(max(0.0, delay_time - (time.monotonic() - t0)))
+            remaining = max(0.0, delay_time - (time.monotonic() - t0))
+            wake = getattr(self.frame_source, "wake", None)
+            if wake is not None:
+                if wake.wait(remaining):  # an apply interrupts the wait: next frame now
+                    wake.clear()
+            else:
+                time.sleep(remaining)
 
     @abstractmethod
     def send_packet(self, packet: bytes):

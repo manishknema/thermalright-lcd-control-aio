@@ -12,7 +12,6 @@ class LoggerConfig:
     """Configuration centralisée pour les loggers du projet"""
 
     SERVICE_LOG_FILE = "/var/log/thermalright-lcd-control-service.log"
-    GUI_LOG_FILE = f"{Path.home()}/.local/state/thermalright-lcd-control/thermalright-lcd-control-gui.log"
 
     @staticmethod
     def is_development_mode():
@@ -121,38 +120,7 @@ class LoggerConfig:
 
         return logger
 
-    @staticmethod
-    def setup_gui_logger():
-        """Setup logger for the LCD control UI component"""
-        logger = logging.getLogger('thermalright.lcd_control_ui')
-
-        # Clear any existing handlers
-        logger.handlers.clear()
-
-        # Set log level
-        log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
-        logger.setLevel(getattr(logging, log_level, logging.INFO))
-
-        if LoggerConfig.is_development_mode():
-            # Development mode: console output
-            handler = LoggerConfig._create_console_handler()
-            logger.info("LCD Control UI logger configured for development mode (console)")
-        else:
-            # Production mode: file logging
-            handler = LoggerConfig._create_file_handler(LoggerConfig.GUI_LOG_FILE)
-            logger.info(f"LCD Control UI logger configured for production mode (file: {LoggerConfig.GUI_LOG_FILE})")
-
-        logger.addHandler(handler)
-        logger.propagate = False  # Prevent duplicate logs
-
-        return logger
-
 
 def get_service_logger():
     """Get the device controller logger instance"""
     return LoggerConfig.setup_service_logger()
-
-
-def get_gui_logger():
-    """Get the LCD control UI logger instance"""
-    return LoggerConfig.setup_gui_logger()

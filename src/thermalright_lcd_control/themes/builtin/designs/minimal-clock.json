@@ -1,0 +1,137 @@
+{
+ "schema": 2,
+ "id": "minimal-clock",
+ "name": "Minimal Clock",
+ "description": "Large clock and date with CPU, GPU and power",
+ "order": 5,
+ "base": [
+  320,
+  240
+ ],
+ "mark_corner": "br",
+ "background": {
+  "type": "color"
+ },
+ "device": {
+  "rotation": 0,
+  "brightness": 100,
+  "refresh": 1.0
+ },
+ "widgets": [
+  {
+   "type": "clock",
+   "x": 160,
+   "y": 96,
+   "format": "%H:%M",
+   "size": 84,
+   "font": "display",
+   "color": "text",
+   "anchor": "mm"
+  },
+  {
+   "type": "clock",
+   "x": 160,
+   "y": 150,
+   "format": "%a %d %b",
+   "size": 14,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm",
+   "upper": true
+  },
+  {
+   "type": "text",
+   "x": 60,
+   "y": 192,
+   "text": "{cpu.temp:.0f}°",
+   "size": 20,
+   "font": "bold",
+   "color": "heat",
+   "metric": "cpu.temp",
+   "heat": [
+    35,
+    95
+   ],
+   "anchor": "mm"
+  },
+  {
+   "type": "text",
+   "x": 60,
+   "y": 214,
+   "text": "CPU",
+   "size": 9,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm"
+  },
+  {
+   "type": "text",
+   "x": 160,
+   "y": 192,
+   "text": "{gpu.temp:.0f}°",
+   "size": 20,
+   "font": "bold",
+   "color": "heat",
+   "metric": "gpu.temp",
+   "heat": [
+    35,
+    90
+   ],
+   "anchor": "mm",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 160,
+   "y": 214,
+   "text": "GPU",
+   "size": 9,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 160,
+   "y": 192,
+   "text": "{ram.pct:.0f}%",
+   "size": 20,
+   "font": "bold",
+   "color": "accent3",
+   "anchor": "mm",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 160,
+   "y": 214,
+   "text": "RAM",
+   "size": 9,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 260,
+   "y": 192,
+   "text": "{sys.power:.0f}W",
+   "size": 20,
+   "font": "bold",
+   "color": "accent1",
+   "anchor": "mm"
+  },
+  {
+   "type": "text",
+   "x": 260,
+   "y": 214,
+   "text": "POWER",
+   "size": 9,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm"
+  }
+ ]
+}

@@ -1,0 +1,184 @@
+{
+ "schema": 2,
+ "id": "gpu-focus",
+ "name": "GPU Focus",
+ "description": "GPU temperature arc, board power, utilisation, VRAM, clock and fan",
+ "order": 6,
+ "base": [
+  320,
+  240
+ ],
+ "mark_corner": "br",
+ "background": {
+  "type": "color"
+ },
+ "device": {
+  "rotation": 0,
+  "brightness": 100,
+  "refresh": 1.0
+ },
+ "widgets": [
+  {
+   "type": "arc",
+   "metric": "gpu.temp",
+   "cx": 88,
+   "cy": 118,
+   "r": 70,
+   "width": 14,
+   "min": 20,
+   "max": 95,
+   "color": "heat",
+   "heat": [
+    35,
+    90
+   ],
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 88,
+   "y": 108,
+   "text": "{gpu.temp:.0f}°",
+   "size": 44,
+   "font": "bold",
+   "color": "text",
+   "anchor": "mm",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 88,
+   "y": 144,
+   "text": "GPU CORE",
+   "size": 10,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 88,
+   "y": 210,
+   "text": "{gpu.short} · {gpu.clock:.2f} GHz · fan {gpu.fan:.0f}%",
+   "size": 11,
+   "font": "body",
+   "color": "muted",
+   "anchor": "mm",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 180,
+   "y": 18,
+   "text": "GPU power",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "gpu"
+  },
+  {
+   "type": "number",
+   "metric": "gpu.power",
+   "x": 180,
+   "y": 32,
+   "size": 46,
+   "font": "display",
+   "color": "accent2",
+   "unit": "W",
+   "unit_size": 16,
+   "unit_dy": 30,
+   "gap": 4,
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 180,
+   "y": 112,
+   "text": "Util",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 110,
+   "text": "{gpu.util:.0f}%",
+   "size": 15,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra",
+   "requires": "gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "gpu.util",
+   "x": 180,
+   "y": 134,
+   "w": 124,
+   "h": 8,
+   "max": 100,
+   "color": "accent2",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 180,
+   "y": 162,
+   "text": "VRAM",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 160,
+   "text": "{gpu.vram_used:.0f}/{gpu.vram_total:.0f} GB",
+   "size": 15,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra",
+   "requires": "gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "gpu.vram_pct",
+   "x": 180,
+   "y": 184,
+   "w": 124,
+   "h": 8,
+   "max": 100,
+   "color": "accent3",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 160,
+   "y": 110,
+   "text": "No GPU on this node",
+   "size": 16,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 160,
+   "y": 136,
+   "text": "GPU readings need an NVIDIA GPU (NVML)",
+   "size": 10,
+   "font": "body",
+   "color": "muted",
+   "anchor": "mm",
+   "requires": "!gpu"
+  }
+ ]
+}

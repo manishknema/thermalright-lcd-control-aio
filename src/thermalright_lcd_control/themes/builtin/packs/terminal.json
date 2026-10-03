@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "id": "terminal",
+  "name": "Terminal",
+  "ground": "dark",
+  "colors": {
+    "ink": "#020a04",
+    "panel": "#071a0c",
+    "line": "#0f3318",
+    "text": "#b7ffc9",
+    "muted": "#4fae6a",
+    "accent1": "#39ff88",
+    "accent2": "#00e5ff",
+    "accent3": "#c3ff3d",
+    "ok": "#39ff88",
+    "warn": "#e5ff3d",
+    "hot": "#ff4d4d"
+  },
+  "fonts": {
+    "display": null,
+    "bold": null,
+    "body": null,
+    "mono": null
+  },
+  "mark": null,
+  "default_mark": "none"
+}

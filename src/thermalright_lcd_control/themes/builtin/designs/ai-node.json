@@ -1,0 +1,207 @@
+{
+ "schema": 2,
+ "id": "ai-node",
+ "name": "AI Node",
+ "description": "VRAM ring, GPU load and power, LLM tokens/s and service health",
+ "order": 4,
+ "base": [
+  320,
+  240
+ ],
+ "mark_corner": "br",
+ "background": {
+  "type": "color"
+ },
+ "device": {
+  "rotation": 0,
+  "brightness": 100,
+  "refresh": 1.0
+ },
+ "widgets": [
+  {
+   "type": "ring",
+   "metric": "gpu.vram_pct",
+   "cx": 84,
+   "cy": 120,
+   "r": 66,
+   "width": 16,
+   "min": 0,
+   "max": 100,
+   "color": "accent3",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 84,
+   "y": 108,
+   "text": "{gpu.vram_used:.0f}",
+   "size": 40,
+   "font": "bold",
+   "color": "text",
+   "anchor": "mm",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 84,
+   "y": 140,
+   "text": "of {gpu.vram_total:.0f} GB VRAM",
+   "size": 10,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm",
+   "requires": "gpu"
+  },
+  {
+   "type": "ring",
+   "metric": "ram.pct",
+   "cx": 84,
+   "cy": 120,
+   "r": 66,
+   "width": 16,
+   "min": 0,
+   "max": 100,
+   "color": "accent3",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 84,
+   "y": 108,
+   "text": "{ram.used:.0f}",
+   "size": 40,
+   "font": "bold",
+   "color": "text",
+   "anchor": "mm",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 84,
+   "y": 140,
+   "text": "of {ram.total:.0f} GB RAM",
+   "size": 10,
+   "font": "bold",
+   "color": "muted",
+   "anchor": "mm",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 176,
+   "y": 22,
+   "text": "{node.name}",
+   "size": 12,
+   "font": "bold",
+   "color": "text",
+   "upper": true
+  },
+  {
+   "type": "text",
+   "x": 176,
+   "y": 52,
+   "text": "GPU",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 49,
+   "text": "{gpu.util:.0f}% · {gpu.temp:.0f}°",
+   "size": 17,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra",
+   "requires": "gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "gpu.util",
+   "x": 176,
+   "y": 74,
+   "w": 128,
+   "h": 7,
+   "max": 100,
+   "color": "accent2",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 176,
+   "y": 104,
+   "text": "Power",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 101,
+   "text": "{gpu.power:.0f} W",
+   "size": 17,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra",
+   "requires": "gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "gpu.power",
+   "x": 176,
+   "y": 126,
+   "w": 128,
+   "h": 7,
+   "max": 450,
+   "color": "accent1",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 176,
+   "y": 156,
+   "text": "Tokens/s",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 153,
+   "text": "{llm.tokens_s:.0f}",
+   "size": 17,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra"
+  },
+  {
+   "type": "bar",
+   "metric": "llm.tokens_s",
+   "x": 176,
+   "y": 178,
+   "w": 128,
+   "h": 7,
+   "max": 200,
+   "color": "ok"
+  },
+  {
+   "type": "dots",
+   "x": 16,
+   "y": 218,
+   "size": 10,
+   "services": [
+    "brain",
+    "judge",
+    "collector"
+   ]
+  }
+ ]
+}

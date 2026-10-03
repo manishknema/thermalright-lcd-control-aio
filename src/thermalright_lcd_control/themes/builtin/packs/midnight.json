@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "id": "midnight",
+  "name": "Midnight",
+  "ground": "dark",
+  "colors": {
+    "ink": "#070b1a",
+    "panel": "#111833",
+    "line": "#1f2a4d",
+    "text": "#e6ecff",
+    "muted": "#8091c2",
+    "accent1": "#60a5fa",
+    "accent2": "#22d3ee",
+    "accent3": "#c084fc",
+    "ok": "#34d399",
+    "warn": "#fbbf24",
+    "hot": "#f87171"
+  },
+  "fonts": {
+    "display": null,
+    "bold": null,
+    "body": null,
+    "mono": null
+  },
+  "mark": null,
+  "default_mark": "none"
+}

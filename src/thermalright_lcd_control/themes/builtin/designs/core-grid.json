@@ -1,0 +1,64 @@
+{
+ "schema": 2,
+ "id": "core-grid",
+ "name": "Core Grid",
+ "description": "Load of every CPU thread, auto-sized to the host",
+ "order": 3,
+ "base": [
+  320,
+  240
+ ],
+ "mark_corner": "bl",
+ "background": {
+  "type": "color"
+ },
+ "device": {
+  "rotation": 0,
+  "brightness": 100,
+  "refresh": 1.0
+ },
+ "widgets": [
+  {
+   "type": "text",
+   "x": 16,
+   "y": 14,
+   "text": "{cpu.count} cores",
+   "size": 13,
+   "font": "bold",
+   "color": "text",
+   "upper": true
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 10,
+   "text": "{cpu.temp:.0f}° · {cpu.power:.0f} W",
+   "size": 15,
+   "font": "bold",
+   "color": "accent1",
+   "anchor": "ra"
+  },
+  {
+   "type": "coregrid",
+   "x": 16,
+   "y": 44,
+   "w": 288,
+   "h": 172,
+   "cols": "auto",
+   "gap": 4,
+   "values": true,
+   "label_size": 9
+  },
+  {
+   "type": "text",
+   "x": 16,
+   "y": 222,
+   "text": "avg {cpu.load:.0f}% · {cpu.freq:.2f} GHz",
+   "upper": true,
+   "font": "bold",
+   "size": 10,
+   "color": "muted",
+   "avoid_mark": true
+  }
+ ]
+}
