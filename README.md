@@ -114,6 +114,16 @@ therefore has to protect writes itself. The supported model is:
 - **Sign-in path:** the proxy serves `<prefix>/login` behind the same realm and
   redirects back to `<prefix>/`.
 
+**Forward auth.** `--auth auth_request` (also called `auth: forward`) sends writes
+through nginx `auth_request` to any forward-auth endpoint that answers 2xx
+(allowed), 401 (no session) or 403 (not allowed). That can be oauth2-proxy,
+Authelia, Authentik, or your own service. Set `--auth-url` to that endpoint, for
+example `http://127.0.0.1:4180/oauth2/auth?allowed_groups=lcd-operators`. With
+`--signin-url /oauth2/start`, the sign-in page sends a 401 to the proxy's sign-in
+URL; writes keep returning plain 401/403. Any OIDC provider works behind
+oauth2-proxy (Keycloak, Google, GitHub, Nextcloud with its OIDC app, …).
+htpasswd stays the default.
+
 When a write returns `401` with `WWW-Authenticate: Basic`, the web UI shows
 **Sign in to edit**, which opens that `login` URL. After you sign in, the browser
 sends the credentials with every later write under the same prefix. Viewing
