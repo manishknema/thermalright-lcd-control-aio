@@ -107,6 +107,24 @@ ok warn hot`, `#rrggbb`), optional `fonts` (display/bold/body/mono paths relativ
 pack file; ship the font licence), optional `mark` images, `default_mark`. Users can
 also save packs at runtime (`PUT /api/packs/<id>`) into the state dir.
 
+## Digital segment displays
+
+`--device 0416:8001` gives a digital-mode service, which themes the external
+controller by writing its config (`digital/engine.py`, `digital/runtime.py`).
+Presets are JSON in `digital/builtin/presets/`. Each one sets `layouts.<small|big>`
+with a `display_mode` and `colors {default, groups}`, plus `ranges`,
+`cycle_duration` and `requires`. LED groups are listed in `digital/layout.py`.
+
+Try it without hardware:
+
+```bash
+thermalright-lcd-control-dev --kind digital --digital-defaults <controller config.json>
+curl -H "$T" -X POST $B/api/apply -d '{"preset":"heat"}'
+```
+
+To watch the real effect, point the controller at
+`<state>/digital/config.json`.
+
 ## Add a widget type
 
 1. `engine.py`: add `def w_<type>(self, d, wd, vals, overlay)`; use `self.X/Y/L` for

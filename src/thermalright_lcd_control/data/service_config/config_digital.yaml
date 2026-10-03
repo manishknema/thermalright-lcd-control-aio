@@ -1,0 +1,46 @@
+# Service defaults for the digital segment display (0416:8001). Root-owned; the service never writes
+# here. Everything a user changes from the web UI lives in service.state_dir,
+# owned by the service user. Every value can be overridden by an environment
+# variable (settings.py); a deployment's installer renders its own copy.
+#
+# service.identity  node name / id / role shown in the UI and sent as OTLP resource
+#                   (empty = hostname).
+# service.api       local HTTP API + web UI. Loopback only unless lan: true; every
+#                   /api/* call needs the token in token_file (a reverse proxy can
+#                   inject it). node_url_template, e.g. "/display/{node_id}/", builds
+#                   links to other display nodes listed in nodes_files.
+# service.defaults  first-run selection: a built-in design + a theme pack.
+# service.extras    optional readings: llm.tokens_s from a Prometheus counter and
+#                   svc.<name> health dots (http(s) URL or tcp://host:port).
+# telemetry         the same readings as OTLP metrics (a side channel; optional).
+# display           upstream theme, used only when the service: block is removed.
+# digital.controller_config  the JSON config the segment display's controller reads every
+#                            frame (default <state_dir>/digital/config.json); this service
+#                            owns it and applies presets to it atomically.
+# digital.defaults           optional starting config copied there on first run.
+service:
+  state_dir: /var/lib/thermalright-lcd
+  model: Thermalright digital 0416:8001
+  identity:
+    node_name: ''
+    node_id: ''
+    role: ''
+    device_kind: digital
+    service: thermalright-lcd-control
+  api:
+    enabled: true
+    bind: 127.0.0.1
+    port: 7431
+    lan: false
+    token_file: /etc/thermalright-lcd/api.token
+    base_path: ''
+    node_url_template: ''
+    nodes_files: []
+digital:
+  controller_config: ''
+  defaults: ''
+telemetry:
+  enabled: true
+  otlp_endpoint: http://127.0.0.1:4318
+  interval_seconds: 15
+  resource_attributes: {}

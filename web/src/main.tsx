@@ -9,6 +9,7 @@ import { Editor } from './views/Editor';
 import { Packs } from './views/Packs';
 import { Rotation } from './views/Rotation';
 import { Media } from './views/Media';
+import { Digital } from './views/Digital';
 import './styles.css';
 
 const NAV: { id: Tab; label: string; icon: string }[] = [
@@ -148,19 +149,20 @@ function Dialog() {
 }
 
 function App() {
-  const { tab, go, needToken, online } = useStore();
+  const { tab, go, needToken, online, status } = useStore();
+  const digital = status?.identity?.device_kind === 'digital';
   const [tokenOpen, setTokenOpen] = useState(false);
   return (
     <>
       <Header onToken={() => setTokenOpen((o) => !o)} />
       {tokenOpen && <TokenPanel close={() => setTokenOpen(false)} />}
-      <nav class="tabs" aria-label="Sections">
+      {!digital && <nav class="tabs" aria-label="Sections">
         {NAV.map((n) => (
           <button type="button" class={`tab${tab === n.id ? ' on' : ''}`} aria-current={tab === n.id ? 'page' : undefined} onClick={() => go(n.id)}>
             <Icon name={n.icon} size={15} /><span>{n.label}</span>
           </button>
         ))}
-      </nav>
+      </nav>}
       <main class="wrap">
         {needToken && !tokenOpen && (
           <div class="banner banner-warn">
@@ -169,12 +171,13 @@ function App() {
           </div>
         )}
         {!online && <div class="banner banner-crit"><Icon name="info" /> The display service is not answering. Retrying every few seconds.</div>}
-        {tab === 'live' && <Live />}
-        {tab === 'gallery' && <Gallery />}
-        {tab === 'editor' && <Editor />}
-        {tab === 'packs' && <Packs />}
-        {tab === 'rotation' && <Rotation />}
-        {tab === 'media' && <Media />}
+        {digital && <Digital />}
+        {!digital && tab === 'live' && <Live />}
+        {!digital && tab === 'gallery' && <Gallery />}
+        {!digital && tab === 'editor' && <Editor />}
+        {!digital && tab === 'packs' && <Packs />}
+        {!digital && tab === 'rotation' && <Rotation />}
+        {!digital && tab === 'media' && <Media />}
       </main>
       <Toasts />
       <Dialog />

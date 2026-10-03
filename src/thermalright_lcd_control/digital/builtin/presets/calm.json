@@ -1,0 +1,22 @@
+{
+ "schema": 1,
+ "id": "calm",
+ "order": 1,
+ "name": "Calm",
+ "description": "CPU temperature in one steady teal",
+ "layouts": {
+  "small": {
+   "display_mode": "cpu_temp",
+   "colors": {
+    "default": "2dd4bf"
+   }
+  },
+  "big": {
+   "display_mode": "time_cpu",
+   "colors": {
+    "default": "2dd4bf"
+   }
+  }
+ },
+ "requires": []
+}

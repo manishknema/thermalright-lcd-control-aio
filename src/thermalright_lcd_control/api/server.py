@@ -28,6 +28,13 @@ every write and stores it in its own state directory; it never writes /etc.
   GET  /api/devices                       supported USB LCDs attached to this node
   GET  /api/nodes                         display-capable nodes (this one + peers files)
   GET  /, /assets/*                       the web UI (static)
+
+Digital (segment) displays use DigitalApi below: status, capabilities, metrics, nodes,
+devices as above, plus
+  GET  /api/digital/presets               presets with `available` for this node
+  GET  /api/digital/modes                 display modes of the panel's layout
+  POST /api/apply                         {"preset", "display_mode"?, "ranges"?, "cycle_duration"?}
+  GET  /api/frame.png  POST /api/preview.png {"preset", "display_mode"?}   rendered LED view
 """
 import hmac
 import io
@@ -463,3 +470,36 @@ class DisplayApi:
         self.write_capability()
         self.log.info(f"display API on http://{bind}:{self.port}/ (token {'set' if self.token else 'NOT set'})")
         return httpd
+
+
+class DigitalApi(DisplayApi):
+    """API for a digital display (runtime = digital.runtime.DigitalRuntime)."""
+
+    def capability(self) -> dict:
+        doc = super().capability()
+        doc["hw_display"].update(device_kind="digital", driver="digital_thermal_right_lcd", resolution="segment")
+        return doc
+
+    def handle(self, method: str, path: str, query: dict, body: bytes):
+        rt = self.rt
+        parts = [p for p in path.split("/") if p][1:]
+        head = parts[0] if parts else ""
+        scale = lambda q: max(1, min(4, int((q.get("scale") or ["1"])[0])))
+        if head in ("status", "capabilities", "metrics", "nodes", "devices") and method == "GET":
+            return super().handle(method, path, query, body)
+        if head == "frame.png" and method == "GET":
+            return ("image/png", _png(rt.preview(None, scale=scale(query))))
+        if head == "preview.png" and method == "POST":
+            req = self._json(body)
+            return ("image/png", _png(rt.preview(req.get("selection") or req, scale=max(1, min(4, int(req.get("scale", 1)))))))
+        if head == "apply" and method == "POST":
+            out = rt.apply(self._json(body))
+            self.write_capability()
+            return out
+        if method == "GET" and len(parts) == 1 and head in ("packs", "designs", "themes", "media"):
+            return {head: [], **({"legacy": []} if head == "themes" else {})}  # image-display lists: none here
+        if head == "digital" and method == "GET" and parts[1:] == ["presets"]:
+            return {"presets": [rt.preset_view(p) for p in rt.presets().values()], "layout": rt.layout()}
+        if head == "digital" and method == "GET" and parts[1:] == ["modes"]:
+            return {"modes": rt.modes(), "layout": rt.layout()}
+        raise ApiError(404, f"{method} {path} is not available for digital displays")

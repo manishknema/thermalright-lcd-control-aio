@@ -326,6 +326,41 @@ Designs can require node capabilities, such as `"requires": ["gpu"]` or
 `"requires_any": ["rapl", "gpu"]`. The gallery marks a design that the node
 cannot show, and rotation skips it.
 
+### Digital segment displays (0416:8001)
+
+A digital display has LED segments instead of an image panel. It is driven by its
+own controller (MathieuxHugo/digital_thermal_right_lcd), which re-reads a JSON
+config every frame. With `--device 0416:8001`, `thermalright-lcd-control-init`
+writes `config_digital.yaml` and the service runs in **digital mode**. In that
+mode it does not touch USB itself; it owns the controller's config file
+(`digital.controller_config`, which defaults to `<state>/digital/config.json`)
+and themes the display by rewriting that file atomically. The same API, token
+and web UI apply, and the UI switches to a digital page that shows:
+
+- the live LED view;
+- the presets;
+- the display mode, the temperature range and the cycle time.
+
+**Presets** live in `digital/builtin/presets/*.json`, or in
+`<state>/digital/presets/` for your own. Each preset sets the display mode per
+layout (`small`, `big`), the LED colours (a default plus colours per named LED
+group) and the ranges.
+
+**Colours** are the controller's own syntax:
+
+- `rrggbb`
+- `random`
+- `aaaaaa-bbbbbb`: a pulse
+- `aaaaaa-bbbbbb-cpu_temp` (or `gpu_temp`, `cpu_usage`, `gpu_usage`, `seconds`,
+  `minutes`, `hours`): a gradient
+
+**Nodes without a GPU:** presets and modes that need a GPU reading are hidden.
+GPU-keyed gradients collapse to their start colour, so the controller never
+clamps a missing reading.
+
+Run `thermalright-lcd-control-dev --kind digital --digital-defaults <controller config>`
+to try this without the hardware.
+
 ### Theme v2 (designs, widgets, packs)
 
 A theme is a design (a list of widgets) plus a pack (palette, fonts and an
