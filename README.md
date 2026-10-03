@@ -129,74 +129,123 @@ sudo systemctl stop thermalright-lcd-control.service
 
 ## Vigyan packaging
 
-This fork packages the upstream project as a governed, headless-first service for
-the Vigyan fleet. Upstream behaviour (themes, GUI, device support) is unchanged;
-everything below is additive.
+This fork packages the upstream project as a headless, governed service with a
+web UI. Device support and the upstream v1 YAML themes still work. The PySide6
+GUI has been removed; [docs/GUI_FEATURE_INVENTORY.md](docs/GUI_FEATURE_INVENTORY.md)
+lists every GUI feature and its web UI equivalent.
 
-**Packaging.** The interpreter comes from conda (`python=3.13`, conda-forge) and
-the dependencies come from `uv.lock`, exactly:
+### Install
+
+conda supplies the interpreter (`python=3.13`, conda-forge). `uv.lock` supplies
+the dependencies, exactly:
 
 ```bash
 conda create -p <rt>/conda -c conda-forge --override-channels python=3.13
 UV_PROJECT_ENVIRONMENT=<rt>/venv uv sync --frozen --no-dev --no-editable \
-    --extra otel --python <rt>/conda/bin/python
+    --extra otel --extra video --python <rt>/conda/bin/python
 ```
 
-The core install is headless. Optional extras:
+| extra   | adds                                    | used for                                 |
+|---------|-----------------------------------------|------------------------------------------|
+| `otel`  | OpenTelemetry SDK + OTLP/HTTP exporter  | sending metrics to a local collector     |
+| `video` | opencv-python-headless                  | video backgrounds and video thumbnails   |
 
-| extra   | adds                                    | for                         |
-|---------|-----------------------------------------|-----------------------------|
-| `otel`  | OpenTelemetry SDK + OTLP/HTTP exporter  | metrics to a local collector |
-| `gui`   | PySide6 + opencv-python                 | dev nodes with a display     |
-| `video` | opencv-python-headless                  | video backgrounds, headless  |
+The OS must provide `libhidapi-hidraw0` and `libusb-1.0-0`. The web UI is
+prebuilt into `src/thermalright_lcd_control/web/`, so nodes need no Node
+toolchain. To rebuild it, run `cd web && pnpm install && pnpm build`
+(Vite + TypeScript + Preact).
 
-`gui` and `video` are declared as conflicting (both provide `cv2`). The OS still
-has to provide `libhidapi-hidraw0` and `libusb-1.0-0`.
+### Service, API and web UI
 
-**Showcase layout.** If `showcase.enabled: true` is set in `config_<w><h>.yaml`,
-the service draws a hardware dashboard instead of a theme. It shows CPU package
-temperature and watts (from Intel RAPL energy counters), per-core load bars, NVML
-GPU temperature, power, utilisation and VRAM, RAM, and NVMe temperature. All
-reads are read-only: sysfs, RAPL and NVML queries. Templates for each panel size
-are in `resources/config/showcase/`. With `showcase.enabled: false` the upstream
-theme in the same file's `display:` block is used.
+If `config_<w><h>.yaml` has a `service:` block, the service runs the theme v2
+runtime and a local HTTP API (stdlib). Templates are in
+`resources/config/service/`.
 
-**Telemetry.** With the `otel` extra and `telemetry.enabled: true`, the service
-exports the same readings as OTLP gauges (`hw.cpu.temperature`, `hw.cpu.power`,
-`hw.cpu.core.utilization`, `hw.gpu.*`, `hw.memory.*`, `hw.nvme.temperature`). It
-also exports the counters `hw.lcd.frames_sent` and `hw.lcd.frame_errors`. The
-default endpoint is `http://127.0.0.1:4318`.
+- **Address.** The API binds `127.0.0.1:7431` unless `service.api.lan: true`.
+- **Token.** Every `/api/*` call except `/api/health` needs the token from
+  `service.api.token_file`, sent as `X-Display-Token`. A gateway in front injects
+  it, so the browser never holds it.
+- **Web UI.** Served at `/`, with relative URLs, so it works under any prefix
+  such as `/display/`.
+- **State.** Everything a user changes (themes, packs, uploaded media, the
+  active selection, rotation) is written by the service to `service.state_dir`.
+  The `/etc` config holds defaults only.
+- **Live apply.** Applying a theme swaps the renderer and wakes the frame loop.
+  The panel shows the change on the next frame, without a restart or a USB
+  reconnect. `GET /api/status` reports `apply_to_first_frame_s`.
+- **Preview.** `/api/frame.png` is the exact last frame sent to the panel.
+  `/api/preview.png` renders unsaved edits with the same renderer.
 
-**Service behaviour.** The service:
+The full route list is in the docstring of `src/thermalright_lcd_control/api/server.py`.
 
-- waits for a hot-plugged panel instead of exiting;
-- writes a `frames_sent=N` line every 60 s, so you can confirm frames are reaching
-  the device;
-- exits on a USB write error so that systemd (`Restart=always`) reopens the device;
-- logs to journald when it runs under systemd.
+### Theme v2 (designs, widgets, packs)
 
-The RGB565 encoder uses numpy and produces byte-identical output to the upstream
-per-pixel loop.
+A theme is a design (a list of widgets) plus a pack (palette, fonts and an
+optional mark).
+
+**Built-in designs.** There are seven: `core-gauge`, `power-station`,
+`thermal-strip`, `core-grid`, `ai-node`, `minimal-clock` and `gpu-focus`.
+
+- They are authored on a 320x240 base canvas and scaled uniformly to other panel
+  sizes. A design can carry hand-tuned `layouts["480x480"]` instead.
+- Widgets marked `"requires": "gpu"` are skipped on nodes without an NVML GPU.
+  Any metric that is unavailable is drawn as an em dash.
+
+**Widget types.** `text` (templates such as `{cpu.temp:.0f}` or
+`{sys.power@peak:.0f}`), `number`, `arc`, `ring`, `bar`, `sparkline` (60 s
+history buffer), `coregrid` (sized to the host's core count), `clock`, `dots`
+(service health), `rect` and `image`.
+
+**Metric ids.** The `CATALOG` in `themes/metrics.py` defines them: CPU package
+temperature and watts (Intel RAPL), load, clock, per-core load; GPU temperature,
+power, utilisation, VRAM, clock and fan (NVML, read-only); RAM; NVMe; system
+draw; and optionally `llm.tokens_s` (from a Prometheus counter) and `svc.<name>`
+health.
+
+The theme schema is documented in the docstring of `themes/engine.py`.
+
+**Pack schema** (`themes/builtin/packs/*.json`; user packs go in `<state>/packs/`):
+
+```json
+{
+  "schema": 1, "id": "slate", "name": "Slate", "ground": "dark",
+  "colors": {"ink": "#0c0e14", "panel": "#181c26", "line": "#2c3240", "text": "#eceef3",
+             "muted": "#8a92a2", "accent1": "#f59e0b", "accent2": "#2dd4bf", "accent3": "#a78bfa",
+             "ok": "#22c55e", "warn": "#f59e0b", "hot": "#ef4444"},
+  "fonts": {"display": null, "bold": null, "body": null, "mono": null},
+  "mark": null,
+  "default_mark": "none"
+}
+```
+
+- `ok`, `warn` and `hot` form the heat scale.
+- Font paths are relative to the pack file. `null` means the DejaVu default.
+- `mark` holds the `small` and `big` images per variant (`deep` and `ivory`).
+- A theme's `mark: {mode: corner|background|none, opacity: 0.05-0.20, variant:
+  auto|deep|ivory}` chooses one mark per frame. `corner` uses the small image
+  (at most 32 px); `background` uses one centred large image at that opacity.
+- The neutral packs on this branch are slate (the default), midnight, solar,
+  terminal, arctic (light) and contrast. Brand packs are kept on a separate
+  branch and never ship on main. More packs are just more files.
+
+### Telemetry, probe and fleet install
+
+**Telemetry.** With `telemetry.enabled`, the readings the panel shows are also
+sent as OTLP gauges: `hw.cpu.*`, `hw.gpu.*`, `hw.memory.*`,
+`hw.nvme.temperature`, `hw.lcd.frames_sent` and `hw.lcd.frame_errors`.
 
 **Probe.** `thermalright-lcd-control-probe` prints what this machine can read.
-`--png out.png` renders the showcase frame to a file, and `--usb` lists the
-attached panels.
+`--png out.png --design ai-node --pack slate` renders a design with live
+readings.
 
-**Fleet install.** The installer is in the Vigyan-Virtual-Cloud repo:
-`scripts/a19-install-thermalright-aio.sh`. It is also available as the llm-cli
-feature `hw-display` (`llm-cli hw-display ...`). The installer:
+**Fleet install.** Vigyan-Virtual-Cloud
+`scripts/a19-install-thermalright-aio.sh` (also run as `llm-cli hw-display`):
 
 - detects the panel by USB VID:PID;
-- installs a group-scoped udev rule;
-- installs `vigyan-thermalright-aio.service`, which runs as the unprivileged user
-  `vigyan-hwdisplay`;
-- grants that group read access to RAPL `energy_uj` at each start (the file is
-  root-only by default, CVE-2020-8694);
-- keeps config in `/etc/vigyan/thermalright/aio/`.
-
-Components: `service` (default), `gui`, `themes` and `dashboard`. The `dashboard`
-component installs the OpenObserve "Hardware showcase" dashboard. If `themes` is
-not chosen, the 60 MB theme pack is left out by sparse checkout.
+- runs the service as the unprivileged user `vigyan-lcd`, with root owning the
+  unit, the `/etc` defaults and the token, and `StateDirectory=` for user state;
+- grants RAPL read access to that user only;
+- puts the web UI behind the node gateway at `/display/`.
 
 ## Add new device
 
