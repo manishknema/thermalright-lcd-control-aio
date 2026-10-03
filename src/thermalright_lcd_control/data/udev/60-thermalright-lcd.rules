@@ -1,0 +1,13 @@
+# Thermalright USB LCDs: give one group (default "thermalright") access to the USB
+# device node (enumerate/reset) and the hidraw node (frame writes), and give the
+# logged-in desktop user access too (uaccess), so the service never needs root.
+# Install: thermalright-lcd-control-init --print-udev [--group NAME] > /etc/udev/rules.d/60-thermalright-lcd.rules
+#   0416:5302  320x240 image LCD     0418:5304  480x480 image LCD
+#   87ad:70db  320x320 / 480x480     0416:8001  digital segment display
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="0416", ATTR{idProduct}=="5302", GROUP="@GROUP@", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="0418", ATTR{idProduct}=="5304", GROUP="@GROUP@", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="87ad", ATTR{idProduct}=="70db", GROUP="@GROUP@", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="0416", ATTR{idProduct}=="8001", GROUP="@GROUP@", MODE="0660", TAG+="uaccess"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0416", ATTRS{idProduct}=="5302", GROUP="@GROUP@", MODE="0660", TAG+="uaccess"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0418", ATTRS{idProduct}=="5304", GROUP="@GROUP@", MODE="0660", TAG+="uaccess"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0416", ATTRS{idProduct}=="8001", GROUP="@GROUP@", MODE="0660", TAG+="uaccess"

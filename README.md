@@ -40,18 +40,37 @@ This branch turns it into something you **install once and forget, then control 
 
 ## Quick start
 
+The release wheel is the main way to install. It holds everything the service
+needs at run time: the web UI bundle, the 7 designs, the theme packs, the config
+templates and the udev rule. You don't need a source checkout. The wheel is built
+reproducibly (hatchling is pinned), so a deployment can pin it by sha256.
+
 ```bash
-# 1. interpreter + locked dependencies
-conda create -p /opt/thermalright-lcd/conda -c conda-forge --override-channels python=3.13
-UV_PROJECT_ENVIRONMENT=/opt/thermalright-lcd/venv uv sync --frozen --no-dev --no-editable \
-    --extra otel --python /opt/thermalright-lcd/conda/bin/python
+# system service (root): venv under /opt/thermalright-lcd, config in /etc/thermalright-lcd,
+# state in /var/lib/thermalright-lcd, unprivileged user "thermalright", udev rule, systemd unit
+sudo scripts/install-service.sh --wheel thermalright_lcd_control-1.5.0-py3-none-any.whl
+sudo systemctl enable --now thermalright-lcd-control
 
-# 2. run the service (normally under systemd; see "Service, API and web UI" below)
-/opt/thermalright-lcd/venv/bin/thermalright-lcd-control-service --config /etc/thermalright-lcd
+# or as a plain user, everything under $HOME (user systemd unit)
+scripts/install-service.sh --user --wheel <wheel file or URL>
+systemctl --user enable --now thermalright-lcd-control
 
-# 3. open the dashboard
-xdg-open http://127.0.0.1:7431/      # token: /etc/thermalright-lcd/api.token
+xdg-open http://127.0.0.1:7431/      # token: <config dir>/api.token
 ```
+
+`--prefix`, `--config-dir` and `--state-dir` (or `THERMALRIGHT_PREFIX`,
+`THERMALRIGHT_CONFIG_DIR` and `THERMALRIGHT_STATE_DIR`) put each part wherever
+you want it.
+
+Without `install-service.sh` the steps are: install the wheel into any venv (for
+example `uv pip install 'thermalright_lcd_control-*.whl[otel,video]'`), then run
+`thermalright-lcd-control-init --config-dir DIR --state-dir DIR`. Use
+`--print-udev` to get the udev rule and `--print-unit system|user` to get a
+systemd unit.
+
+**From source (secondary):** run `scripts/install-service.sh` without `--wheel`
+and it builds the wheel from this checkout. For a locked environment, use
+`uv sync --frozen --no-dev --extra otel --extra video`.
 
 Check your sensors without touching the display: `thermalright-lcd-control-probe`.
 
@@ -63,7 +82,9 @@ the config file or an environment variable, with neutral defaults:
 | Setting | Env var | Default |
 |---|---|---|
 | Node name / id / role | `THERMALRIGHT_NODE_NAME`, `THERMALRIGHT_NODE_ID`, `THERMALRIGHT_NODE_ROLE` | hostname |
-| State (your themes, uploads) | `THERMALRIGHT_STATE_DIR` | `/var/lib/thermalright-lcd` |
+| Install prefix (venv) | `THERMALRIGHT_PREFIX` (install-service.sh) | `/opt/thermalright-lcd`; `--user`: `~/.local/share/thermalright-lcd` |
+| Config dir (defaults, token) | `THERMALRIGHT_CONFIG_DIR` (install-service.sh) | `/etc/thermalright-lcd`; `--user`: `~/.config/thermalright-lcd` |
+| State (your themes, uploads) | `THERMALRIGHT_STATE_DIR` | `/var/lib/thermalright-lcd`; `--user`: `~/.local/state/thermalright-lcd` |
 | API address / port / LAN | `THERMALRIGHT_API_BIND`, `THERMALRIGHT_API_PORT`, `THERMALRIGHT_API_LAN` | `127.0.0.1`, `7431`, off |
 | API token file | `THERMALRIGHT_API_TOKEN_FILE` | `/etc/thermalright-lcd/api.token` |
 | URL prefix behind a reverse proxy | `THERMALRIGHT_API_BASE_PATH` | none |
@@ -260,7 +281,7 @@ toolchain. To rebuild it, run `cd web && pnpm install && pnpm build`
 
 If `config_<w><h>.yaml` has a `service:` block, the service runs the theme v2
 runtime and a local HTTP API (stdlib). Templates are in
-`resources/config/service/`.
+`src/thermalright_lcd_control/data/service_config/` (shipped in the wheel).
 
 - **Address.** The API binds `127.0.0.1:7431` unless `service.api.lan: true`.
 - **Token.** Every `/api/*` call except `/api/health` needs the token from
