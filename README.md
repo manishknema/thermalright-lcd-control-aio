@@ -123,6 +123,9 @@ example `http://127.0.0.1:4180/oauth2/auth?allowed_groups=lcd-operators`. With
 URL; writes keep returning plain 401/403. Any OIDC provider works behind
 oauth2-proxy (Keycloak, Google, GitHub, Nextcloud with its OIDC app, …).
 htpasswd stays the default.
+For a ready-made oauth2-proxy setup with any OIDC provider, see vigyan-llm-cli
+`kits/gateway-forward-auth`. It renders `/_forward_auth_<group>` and
+`@forward_auth_signin`; pass those to `--auth-location` and `--signin-location`.
 
 When a write returns `401` with `WWW-Authenticate: Basic`, the web UI shows
 **Sign in to edit**, which opens that `login` URL. After you sign in, the browser
