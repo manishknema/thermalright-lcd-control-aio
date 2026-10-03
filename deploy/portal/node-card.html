@@ -1,0 +1,62 @@
+<!--
+  Thermalright display node card: paste into any portal page.
+
+  data-base: the URL prefix that serves the display UI/API (a reverse proxy that
+  injects the token, e.g. /display/ from deploy/nginx). The card stays hidden
+  unless <base>api/status answers, so it only appears on nodes that have a
+  display. It only reads (status, metrics, frame PNG); nothing here can change
+  the panel. Colours come from the CSS variables below; override them to match
+  your portal.
+-->
+<div class="tlcd-card" data-base="/display/" hidden>
+  <style>
+    .tlcd-card { --tlcd-bg:#1f2833; --tlcd-fg:#c5c6c7; --tlcd-accent:#66fcf1; --tlcd-dim:#45a29e; --tlcd-line:#2a2e3a;
+      background:var(--tlcd-bg); color:var(--tlcd-fg); border-radius:12px; border-left:5px solid var(--tlcd-dim);
+      padding:20px; font:14px/1.5 'JetBrains Mono', ui-monospace, monospace; max-width:420px; }
+    .tlcd-card h3 { margin:0 0 4px; color:var(--tlcd-accent); font-size:1.1em; }
+    .tlcd-card .tlcd-sub { font-size:.8em; opacity:.8; }
+    .tlcd-card .tlcd-row { display:flex; gap:14px; align-items:center; margin-top:12px; }
+    .tlcd-card img { width:160px; height:120px; object-fit:contain; border:1px solid var(--tlcd-line); border-radius:8px;
+      background:#0b0c10; image-rendering:pixelated; flex-shrink:0; }
+    .tlcd-card dl { margin:0; flex:1; display:grid; grid-template-columns:auto 1fr; gap:2px 10px; font-size:.85em; }
+    .tlcd-card dd { margin:0; color:var(--tlcd-accent); text-align:right; }
+    .tlcd-card a { color:var(--tlcd-accent); font-weight:bold; font-size:.85em; text-decoration:none; }
+  </style>
+  <h3>Display</h3>
+  <div class="tlcd-sub" data-tlcd="title">LCD</div>
+  <div class="tlcd-row">
+    <img data-tlcd="frame" alt="Live LCD frame">
+    <dl>
+      <dt>CPU</dt><dd data-tlcd="cpu">&mdash;</dd>
+      <dt>GPU</dt><dd data-tlcd="gpu">&mdash;</dd>
+      <dt>Theme</dt><dd data-tlcd="theme">&mdash;</dd>
+      <dt>Frames</dt><dd data-tlcd="frames">&mdash;</dd>
+    </dl>
+  </div>
+  <p><a data-tlcd="open" href="/display/">Open display &rarr;</a></p>
+  <script>
+    (function () {
+      var card = document.currentScript.parentElement, base = card.getAttribute('data-base') || '/display/';
+      var q = function (k) { return card.querySelector('[data-tlcd="' + k + '"]'); };
+      var t = function (v, u) { return v === null || v === undefined ? '—' : Math.round(v) + u; };
+      q('open').href = base;
+      function tick() {
+        Promise.all([fetch(base + 'api/status'), fetch(base + 'api/metrics')])
+          .then(function (r) { return r[0].ok && r[1].ok ? Promise.all([r[0].json(), r[1].json()]) : null; })
+          .then(function (d) {
+            if (!d) return;
+            var st = d[0], v = d[1].values || {}, id = st.identity || {};
+            card.hidden = false;
+            q('title').textContent = (id.node_name || 'node') + ' · ' + (id.model || 'LCD') + ' (' + (id.resolution || '') + ')';
+            q('cpu').textContent = t(v['cpu.temp'], '°C') + (v['cpu.power'] != null ? ' · ' + t(v['cpu.power'], ' W') : '');
+            q('gpu').textContent = v['gpu.temp'] != null ? t(v['gpu.temp'], '°C') + ' · ' + t(v['gpu.power'], ' W') : '—';
+            q('theme').textContent = (st.theme.name || '—') + ' / ' + (st.theme.pack || '—');
+            q('frames').textContent = st.device.frames_sent;
+            q('frame').src = base + 'api/frame.png?t=' + Date.now();
+          })
+          .catch(function () {});
+      }
+      tick(); setInterval(tick, 2000);
+    })();
+  </script>
+</div>
