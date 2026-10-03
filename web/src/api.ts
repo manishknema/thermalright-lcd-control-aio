@@ -1,5 +1,5 @@
 // Thin client for the display service API. Every URL is relative so the app
-// works at /display/ and /display/@<host>/ behind the gateway.
+// works at the service root or under any reverse-proxy prefix (e.g. /display/<node>/).
 
 export type Json = Record<string, any>;
 
@@ -18,6 +18,9 @@ export interface Theme {
   base?: [number, number];
   mark?: { mode?: string; opacity?: number; variant?: string; corner?: string };
   mark_corner?: string;
+  available?: boolean;
+  requires?: string[];
+  requires_any?: string[];
   background?: { type: string; path?: string; interval?: number };
   foreground?: { path: string; alpha?: number; x?: number; y?: number } | null;
   device?: { rotation?: number; brightness?: number; refresh?: number };
@@ -48,7 +51,13 @@ export interface Selection {
   device?: Json;
 }
 
+export interface Identity {
+  node_name?: string; node_id?: string; role?: string; device_kind?: string;
+  model?: string; vid_pid?: string; resolution?: string; service?: string;
+}
+
 export interface Status {
+  identity?: Identity;
   device: {
     vid_pid?: string; model?: string; connected?: boolean; width: number; height: number;
     frames_sent: number; frame_errors: number; last_frame_ms: number; last_frame_at: number; uptime_s: number;
@@ -63,6 +72,7 @@ export interface Status {
 
 export interface Capabilities {
   gpu?: boolean; rapl?: boolean; llm?: boolean; cores?: number; nvme?: boolean; services?: string[];
+  rapl_reason?: string | null; gpu_reason?: string | null;
 }
 
 export interface CatalogEntry { label: string; unit: string; heat: [number, number] | null; requires: string | null }
@@ -76,7 +86,7 @@ export interface Metrics {
 export interface MediaItem { path: string; kind: 'image' | 'gif' | 'video' | 'collection' | 'font'; count: number | null; bytes: number | null }
 
 export interface NodeInfo {
-  hostname: string; self: boolean; display_url: string | null;
+  hostname: string; node_id?: string; self: boolean; display_url: string | null;
   hw_display: Json | null;
 }
 

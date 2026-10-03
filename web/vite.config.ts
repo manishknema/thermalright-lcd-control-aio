@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
 
-// The UI is served by the display service at its root and reached through the
-// node gateway at /display/ (or /display/@<host>/), so every URL is relative.
+// The UI is served by the display service at its root, possibly behind a reverse
+// proxy prefix, so every URL is relative.
 // Dev: `DISPLAY_TOKEN=... pnpm dev` proxies api/* to a running service and adds
-// the token header the gateway would inject in production.
+// the token header a reverse proxy would inject in production.
 const target = process.env.DISPLAY_API || 'http://127.0.0.1:7499';
 const token = process.env.DISPLAY_TOKEN || '';
 

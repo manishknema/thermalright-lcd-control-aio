@@ -6,13 +6,18 @@ The device frame loop calls `get_frame_with_duration()`; the HTTP API calls
 a lock and wakes the frame loop, so the panel shows the change on the next frame
 (well under a second) without reopening the USB device.
 
-State directory (default /var/lib/vigyan/thermalright, owned by the service
-user; systemd StateDirectory=):
+State directory (settings.state_dir: THERMALRIGHT_STATE_DIR, systemd
+StateDirectory=, service.state_dir, default /var/lib/thermalright-lcd; owned by
+the service user):
   state.json            active selection, rotation, last apply time
   themes/<id>.json      user themes (schema 2)
   packs/<id>.json       user packs
   media/                uploaded backgrounds (files and collection_* dirs), fonts
-/etc holds defaults only; this module never writes there.
+The config file holds defaults only; this module never writes there.
+
+Designs may declare node requirements: "requires": ["gpu"] (all needed) and
+"requires_any": ["rapl", "gpu"] (one needed). /api/designs reports `available`
+for this node and rotation skips designs that are not available.
 """
 import copy
 import glob
@@ -129,8 +134,10 @@ def validate_theme(doc: dict) -> dict:
 
 
 class Runtime:
-    def __init__(self, width: int, height: int, device: dict, cfg: Optional[dict], state_dir: str, logger):
+    def __init__(self, width: int, height: int, device: dict, cfg: Optional[dict], state_dir: str, logger,
+                 identity: Optional[dict] = None):
         self.w, self.h, self.device, self.log = width, height, device, logger
+        self.identity = identity or {}
         self.cfg = cfg or {}
         self.state_dir = Path(state_dir)
         self.media = self.state_dir / "media"
@@ -175,6 +182,21 @@ class Runtime:
             _atomic_write(self.state_dir / "state.json", {**self.state, "saved_at": time.time()})
         except OSError as e:
             self.log.warning(f"state not persisted: {e}")
+
+    # ── availability ─────────────────────────────────────────────────────
+    def available(self, doc: dict, caps: Optional[dict] = None) -> bool:
+        caps = caps if caps is not None else self.book.capabilities()
+        if any(not caps.get(r) for r in doc.get("requires") or []):
+            return False
+        anyof = doc.get("requires_any") or []
+        return not anyof or any(caps.get(r) for r in anyof)
+
+    def selection_available(self, sel: dict, caps: Optional[dict] = None) -> bool:
+        try:
+            t = self.resolve(sel)
+        except ValueError:
+            return False
+        return True if t.get("legacy") else self.available(t, caps)
 
     # ── themes ───────────────────────────────────────────────────────────
     def user_themes(self) -> dict:
@@ -221,20 +243,34 @@ class Runtime:
             t["device"] = {**(t.get("device") or {}), **sel["device"]}
         return t
 
+    def _media_paths(self, theme: dict) -> dict:
+        """Relative foreground/image paths are media-library paths (<state>/media)."""
+        theme = copy.deepcopy(theme)
+
+        def fix(p):
+            if not p:
+                return p
+            pp = Path(p)
+            if pp.is_absolute():
+                return p
+            full = (self.media / pp).resolve()
+            return str(full) if self.media.resolve() in full.parents else p
+
+        if isinstance(theme.get("foreground"), dict):
+            theme["foreground"]["path"] = fix(theme["foreground"].get("path"))
+        for w in theme.get("widgets") or []:
+            if w.get("type") == "image":
+                w["path"] = fix(w.get("path"))
+        return theme
+
     def build(self, theme: dict, size=None, for_preview=False):
         w, h = size or (self.w, self.h)
         if theme.get("legacy"):
             return LegacyRenderer(theme["legacy"], w, h, self.book)
+        theme = self._media_paths(theme)
         bg = theme.get("background") or {}
         background = Background(bg, (w, h), self.media) if bg.get("type", "color") != "color" else None
-        r = Renderer(theme, self.packs.get(theme.get("pack", "slate")), w, h, self.book, background)
-        if theme.get("foreground", {}) and r.fg is None and (theme.get("foreground") or {}).get("path"):
-            fp = Path(theme["foreground"]["path"])
-            if not fp.is_absolute():
-                theme = copy.deepcopy(theme)
-                theme["foreground"]["path"] = str(self.media / fp)
-                r = Renderer(theme, r.pack, w, h, self.book, background)
-        return r
+        return Renderer(theme, self.packs.get(theme.get("pack", "slate")), w, h, self.book, background)
 
     def _activate(self, sel: dict, persist=True):
         try:
@@ -287,6 +323,8 @@ class Runtime:
             self.state["rotate"] = {"enabled": bool(rot.get("enabled")) and len(items) > 1,
                                     "seconds": max(5, min(3600, int(rot.get("seconds", 15)))), "items": items}
             self._rot_idx, self._rot_next = 0, 0.0
+        if not self.state["rotate"]["enabled"]:
+            self._activate(self.state["active"], persist=False)  # leave rotation on the chosen theme
         self._save_state()
         return self.state["rotate"]
 
@@ -299,7 +337,11 @@ class Runtime:
         if now < self._rot_next:
             return
         self._rot_next = now + rot["seconds"]
-        sel = rot["items"][self._rot_idx % len(rot["items"])]
+        caps = self.book.capabilities()
+        items = [it for it in rot["items"] if self.selection_available(it, caps)]
+        if not items:
+            return
+        sel = items[self._rot_idx % len(items)]
         self._rot_idx += 1
         try:
             r = self.build(self.resolve(sel))
@@ -340,6 +382,7 @@ class Runtime:
         with self.lock:
             lat = (self.first_frame_after_apply - self.applied_at) if self.first_frame_after_apply else None
             return {
+                "identity": self.identity,
                 "device": {**self.device, "width": self.w, "height": self.h,
                            "frames_sent": STATS.frames_sent, "frame_errors": STATS.frame_errors,
                            "last_frame_ms": round(STATS.last_frame_ms, 1), "last_frame_at": self.last_frame_at,

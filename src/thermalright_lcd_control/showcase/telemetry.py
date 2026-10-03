@@ -8,8 +8,13 @@ Config (config_<w><h>.yaml):
 
     telemetry:
       enabled: true
-      otlp_endpoint: http://127.0.0.1:4318
+      otlp_endpoint: http://127.0.0.1:4318   # or OTEL_EXPORTER_OTLP_ENDPOINT
       interval_seconds: 15
+      resource_attributes: {}                # extra resource attributes, e.g. a fleet node id
+
+Resource: service.name, host.name, device.kind, device.model, hw.lcd.device,
+hw.lcd.resolution (from the service identity) + resource_attributes. Export runs
+on the SDK's own thread; a collector outage never affects the panel or the API.
 
 Metric names (OpenObserve stream = name with dots as underscores):
   hw.cpu.temperature  hw.cpu.power  hw.cpu.utilization  hw.cpu.frequency
@@ -28,7 +33,7 @@ from thermalright_lcd_control.showcase.stats import STATS
 SERVICE_NAME = "thermalright-lcd"
 
 
-def start(cfg: Optional[dict], logger, device: str = "") -> bool:
+def start(cfg: Optional[dict], logger, identity: Optional[dict] = None) -> bool:
     cfg = cfg or {}
     if not cfg.get("enabled", False):
         logger.info("OTLP telemetry disabled (telemetry.enabled is false)")
@@ -50,14 +55,21 @@ def start(cfg: Optional[dict], logger, device: str = "") -> bool:
     except Exception:
         svc_version = "unknown"
 
-    endpoint = str(cfg.get("otlp_endpoint", "http://127.0.0.1:4318")).rstrip("/") + "/v1/metrics"
+    from thermalright_lcd_control import settings
+    endpoint = str(settings.otlp_endpoint(cfg)).rstrip("/") + "/v1/metrics"
     interval_ms = int(float(cfg.get("interval_seconds", 15)) * 1000)
     sampler = SamplerThread.get()
 
     reader = PeriodicExportingMetricReader(OTLPMetricExporter(endpoint=endpoint, timeout=5),
                                            export_interval_millis=interval_ms)
-    resource = Resource.create({"service.name": SERVICE_NAME, "service.version": svc_version,
-                                "hw.lcd.device": device})
+    ident = identity or {}
+    attrs = {"service.name": SERVICE_NAME, "service.version": svc_version,
+             "host.name": ident.get("node_name", ""), "device.kind": ident.get("device_kind", ""),
+             "device.model": ident.get("model", ""), "hw.lcd.device": ident.get("vid_pid", ""),
+             "hw.lcd.resolution": ident.get("resolution", "")}
+    # Deployment-specific identity (e.g. a fleet node id) comes from config, never code.
+    attrs.update({str(k): str(v) for k, v in (cfg.get("resource_attributes") or {}).items()})
+    resource = Resource.create({k: v for k, v in attrs.items() if v})
     provider = MeterProvider(resource=resource, metric_readers=[reader])
     metrics.set_meter_provider(provider)
     meter = metrics.get_meter("thermalright_lcd_control.showcase")

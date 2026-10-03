@@ -1,23 +1,37 @@
-# Service defaults for 320x320 panels (Vigyan packaging). Installed root-owned
-# under /etc/vigyan/thermalright/aio/; the service never writes here. Everything a
-# user changes from the web UI lives in service.state_dir (owned by the service user).
+# Service defaults for 320x320 panels. Root-owned; the service never writes
+# here. Everything a user changes from the web UI lives in service.state_dir,
+# owned by the service user. Every value can be overridden by an environment
+# variable (settings.py); a deployment's installer renders its own copy.
 #
-# service.api      local HTTP API + web UI. Loopback only unless lan: true; every
-#                  /api/* call needs the token in token_file (the gateway injects it).
-# service.defaults first-run selection: a built-in design + a theme pack.
-# service.extras   optional readings: llm.tokens_s from a Prometheus counter and
-#                  svc.<name> health dots (http(s) URL or tcp://host:port).
-# telemetry        the same readings as OTLP metrics to the node-local collector.
-# display          upstream theme, used only when the service: block is removed.
+# service.identity  node name / id / role shown in the UI and sent as OTLP resource
+#                   (empty = hostname).
+# service.api       local HTTP API + web UI. Loopback only unless lan: true; every
+#                   /api/* call needs the token in token_file (a reverse proxy can
+#                   inject it). node_url_template, e.g. "/display/{node_id}/", builds
+#                   links to other display nodes listed in nodes_files.
+# service.defaults  first-run selection: a built-in design + a theme pack.
+# service.extras    optional readings: llm.tokens_s from a Prometheus counter and
+#                   svc.<name> health dots (http(s) URL or tcp://host:port).
+# telemetry         the same readings as OTLP metrics (a side channel; optional).
+# display           upstream theme, used only when the service: block is removed.
 service:
-  state_dir: /var/lib/vigyan/thermalright
+  state_dir: /var/lib/thermalright-lcd
   model: ''
+  identity:
+    node_name: ''
+    node_id: ''
+    role: ''
+    device_kind: aio
+    service: thermalright-lcd-control
   api:
     enabled: true
     bind: 127.0.0.1
     port: 7431
     lan: false
-    token_file: /etc/vigyan/secret.d/thermalright-api.token
+    token_file: /etc/thermalright-lcd/api.token
+    base_path: ''
+    node_url_template: ''
+    nodes_files: []
   defaults:
     design: ai-node
     pack: slate
@@ -34,6 +48,7 @@ telemetry:
   enabled: true
   otlp_endpoint: http://127.0.0.1:4318
   interval_seconds: 15
+  resource_attributes: {}
 display:
   background:
     path: ./resources/themes/backgrounds/y010.png

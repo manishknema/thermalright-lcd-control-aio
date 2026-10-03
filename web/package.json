@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "description": "Web UI for the Thermalright LCD display service (served at /display/ by the node gateway)",
+  "description": "Web UI for the Thermalright LCD display service (served by the service; works under any URL prefix)",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",

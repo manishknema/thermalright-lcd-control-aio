@@ -23,7 +23,8 @@ const NAV: { id: Tab; label: string; icon: string }[] = [
 function Header({ onToken }: { onToken: () => void }) {
   const { status, metrics, online, needToken } = useStore();
   const dev = status?.device;
-  const node = (metrics?.values['node.name'] as string) || location.pathname.match(/@([^/]+)/)?.[1] || 'this node';
+  const id = status?.identity;
+  const node = id?.node_name || (metrics?.values['node.name'] as string) || 'this node';
   const connected = online && dev?.connected !== false;
   const state = !online ? 'crit' : needToken ? 'warn' : dev?.connected === false ? 'warn' : 'ok';
   const lat = status?.apply_to_first_frame_s;
@@ -47,8 +48,8 @@ function Header({ onToken }: { onToken: () => void }) {
           {!online ? 'service offline' : needToken ? 'token required' : dev?.connected === false ? 'panel disconnected' : 'connected'}
         </span>
         {dev && (
-          <span class="pill" title="Device model, USB id and panel resolution">
-            {dev.model || 'LCD'} <span class="muted">{dev.vid_pid}</span> {dev.width}x{dev.height}
+          <span class="pill" title={`Node id ${id?.node_id || '?'} · USB ${dev.vid_pid || '?'}${id?.service ? ' · unit ' + id.service : ''}`}>
+            {node} · {id?.model || dev.model || 'LCD'} ({id?.resolution || `${dev.width}x${dev.height}`})
           </span>
         )}
         {dev && (
@@ -158,7 +159,7 @@ function App() {
       <main class="wrap">
         {needToken && !tokenOpen && (
           <div class="banner banner-warn">
-            <Icon name="key" /> The display API rejected this request (no token). Open the UI through the node gateway at /display/, or set a developer token.
+            <Icon name="key" /> The display API rejected this request (no token). Open the UI through the reverse proxy that injects the token, or set a developer token.
             <Btn small kind="primary" onClick={() => setTokenOpen(true)}>Set token</Btn>
           </div>
         )}

@@ -188,9 +188,18 @@ class MetricBook:
     def capabilities(self) -> dict:
         cur = self.current()
         hs = self.sampler.sampler
+        if not hs.rapl.domains:
+            rapl_reason = "this CPU exposes no Intel RAPL package domain"
+        elif not hs.rapl.readable:
+            rapl_reason = ("energy_uj is root-only (CVE-2020-8694); the service unit must grant its "
+                           "user read access at start (see README)")
+        else:
+            rapl_reason = None
         return {
             "gpu": cur["gpu.temp"] is not None or bool(hs.nvml.handles),
+            "gpu_reason": None if hs.nvml.ok and hs.nvml.handles else "no NVIDIA GPU visible to NVML on this node",
             "rapl": cur["cpu.power"] is not None or hs.rapl.readable,
+            "rapl_reason": rapl_reason,
             "llm": "llm.tokens_s" in self.extras.values or bool(self.extras.tokens.get("url")),
             "cores": cur["cpu.count"] or 0,
             "nvme": bool(hs.nvme.paths),

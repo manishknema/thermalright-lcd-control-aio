@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """Local HTTP API + web UI for the running display (stdlib only).
 
-Binds 127.0.0.1 by default; a gateway (nginx) in front injects the token, so a
-browser never sees it. Every /api/* route except /api/health requires the
+Binds 127.0.0.1 by default (settings.api: bind, port, lan, token file, base path,
+node URL template, peers files — config or env, see settings.py). A reverse
+proxy in front injects the token, so a browser never sees it. Every /api/* route except /api/health requires the
 token in `X-Display-Token` or `Authorization: Bearer`. The service validates
 every write and stores it in its own state directory; it never writes /etc.
 
@@ -25,7 +26,7 @@ every write and stores it in its own state directory; it never writes /etc.
   GET  /api/media/file?path=<rel>[&thumb=1]
   DELETE /api/media?path=<rel>
   GET  /api/devices                       supported USB LCDs attached to this node
-  GET  /api/nodes                         display-capable nodes (mDNS peers file, nodes.json fallback)
+  GET  /api/nodes                         display-capable nodes (this one + peers files)
   GET  /, /assets/*                       the web UI (static)
 """
 import hmac
@@ -41,6 +42,7 @@ import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
 from PIL import Image
@@ -86,7 +88,9 @@ class DisplayApi:
         self.port = int(cfg.get("port", 7431))
         self.lan = bool(cfg.get("lan", False))
         self.token = self._read_token(cfg.get("token_file"))
-        self.nodes_files = cfg.get("nodes_files") or ["/etc/vigyan/cluster-peers.json"]
+        self.nodes_files = cfg.get("nodes_files") or []
+        self.base_path = cfg.get("base_path", "")
+        self.node_url_template = cfg.get("node_url_template", "")
         if not self.token:
             logger.warning("display API: no token file; API is open to local callers on the loopback")
 
@@ -98,14 +102,21 @@ class DisplayApi:
             return ""
 
     # ── capability doc (mDNS consumers read this) ───────────────────────────
+    def node_url(self, node_id: str, hostname: str = "") -> Optional[str]:
+        t = self.node_url_template
+        return t.format(node_id=node_id, hostname=hostname) if t else None
+
     def capability(self) -> dict:
         st = self.rt.status()
-        dev = st["device"]
+        dev, ident = st["device"], st.get("identity") or {}
         return {"hw_display": {
+            "node_id": ident.get("node_id"), "node_name": ident.get("node_name"),
+            "device_kind": ident.get("device_kind", "aio"),
             "model": dev.get("model"), "vid_pid": dev.get("vid_pid"),
             "resolution": f"{dev['width']}x{dev['height']}", "driver": "thermalright-lcd-control-aio",
             "connected": dev.get("connected", True), "api_port": self.port, "api_lan": self.lan,
-            "api_path": "/display/", "theme": st["theme"], "updated": int(time.time()),
+            "url": self.node_url(ident.get("node_id", ""), ident.get("node_name", "")),
+            "theme": st["theme"], "updated": int(time.time()),
         }}
 
     def write_capability(self):
@@ -149,7 +160,9 @@ class DisplayApi:
                 raise ApiError(400, "theme or selection required")
             return ("image/png", _png(rt.preview(src, size), max(1, min(4, int(req.get("scale", 1))))))
         if head == "designs" and method == "GET":
-            return {"designs": list(rt.designs.values())}
+            caps = rt.book.capabilities()
+            return {"designs": [{**d, "available": rt.available(d, caps)} for d in rt.designs.values()],
+                    "capabilities": caps}
         if head == "packs":
             if method == "GET" and len(parts) == 1:
                 return {"packs": [{**p.doc, "builtin": p.builtin} for p in rt.packs.all().values()]}
@@ -305,39 +318,44 @@ class DisplayApi:
         return img
 
     def _nodes(self) -> list:
-        """Nodes advertising hw-display. Peers come from the a17 mDNS announcer's
-        peers file; nodes.json (llm-cli inventory) is the fallback list. The full
-        capability doc is fetched from each peer's caps_url."""
-        import socket
+        """This display plus display-capable peers.
+
+        Peers files (service.api.nodes_files) are JSON lists of
+        {hostname, ip, node_id?, caps_url?, hw_display?}; caps_url must return a JSON
+        object with a `hw_display` object (this service's /api/capabilities shape).
+        A peer gets a URL (service.api.node_url_template) only when its display API
+        listens on the LAN; otherwise it is listed for information."""
         import urllib.request
-        me = socket.gethostname()
-        peers = []
+        me = self.capability()["hw_display"]
+        out = [{"hostname": me.get("node_name"), "node_id": me.get("node_id"), "self": True,
+                "hw_display": me, "display_url": "./"}]
+        seen = {me.get("node_id"), me.get("node_name")}
         for f in self.nodes_files:
             try:
                 data = json.loads(Path(f).read_text())
             except (OSError, ValueError):
                 continue
-            rows = data if isinstance(data, list) else data.get("nodes", [])
-            for r in rows:
+            for r in data if isinstance(data, list) else data.get("nodes", []):
                 host = r.get("hostname") or r.get("name")
-                if host and all(p["hostname"] != host for p in peers):
-                    peers.append({"hostname": host, "ip": r.get("ip") or r.get("host") or host,
-                                  "caps_url": r.get("caps_url") or f"http://{r.get('ip') or host}:8765/api/capabilities",
-                                  "hw_display_txt": r.get("hw_display")})
-        out = [{"hostname": me, "self": True, "hw_display": self.capability()["hw_display"], "display_url": "./"}]
-        for p in peers:
-            if p["hostname"] == me:
-                continue
-            hw = None
-            try:
-                with urllib.request.urlopen(p["caps_url"], timeout=1.5) as r:
-                    hw = (json.loads(r.read()) or {}).get("hw_display")
-            except Exception:
-                hw = {"model": p["hw_display_txt"]} if p.get("hw_display_txt") else None
-            if not hw:
-                continue
-            url = f"/display/@{p['hostname']}/" if hw.get("api_port") and hw.get("api_lan") else None
-            out.append({"hostname": p["hostname"], "self": False, "hw_display": hw, "display_url": url})
+                nid = r.get("node_id") or host
+                if not host or host in seen or nid in seen:
+                    continue
+                seen.update((host, nid))
+                hw = None
+                if r.get("caps_url"):
+                    try:
+                        with urllib.request.urlopen(r["caps_url"], timeout=1.5) as resp:
+                            hw = (json.loads(resp.read()) or {}).get("hw_display")
+                    except Exception:
+                        hw = None
+                if not hw and r.get("hw_display"):
+                    hw = r["hw_display"] if isinstance(r["hw_display"], dict) else {"model": str(r["hw_display"])}
+                if not hw:
+                    continue
+                nid = hw.get("node_id") or nid
+                url = self.node_url(nid, host) if hw.get("api_port") and hw.get("api_lan") else None
+                out.append({"hostname": hw.get("node_name") or host, "node_id": nid, "self": False,
+                            "hw_display": hw, "display_url": url})
         return out
 
     def _devices(self) -> list:
@@ -386,7 +404,9 @@ class DisplayApi:
 
             def _route(self, method):
                 u = urlparse(self.path)
-                path = re.sub(r"^/display(?=/|$)", "", u.path) or "/"  # tolerate an unstripped gateway prefix
+                path = u.path
+                if api.base_path and (path == api.base_path or path.startswith(api.base_path + "/")):
+                    path = path[len(api.base_path):] or "/"  # proxy forwarded the prefix unstripped
                 try:
                     if path == "/api/health":
                         return self._send(200, "application/json", b'{"ok": true}')

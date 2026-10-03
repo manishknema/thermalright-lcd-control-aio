@@ -13,7 +13,7 @@ license = { file = "LICENSE" }
 requires-python = "~=3.13.7"
 # Headless core: everything the LCD service needs, including the local API and
 # the web UI (stdlib http.server + static files). OpenCV video backgrounds and
-# OTLP export are extras. The PySide6 GUI was removed (Vigyan packaging; see
+# OTLP export are extras. The PySide6 GUI was removed (see
 # docs/GUI_FEATURE_INVENTORY.md for what the web UI re-implements).
 dependencies = [
     "hid>=1.0.8",

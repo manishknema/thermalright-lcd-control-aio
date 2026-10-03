@@ -5,12 +5,12 @@ import { Badge, Btn, Card, Dot, Empty, fmt, heatColor, Icon, Ring, Segmented, Sp
 
 interface TileDef {
   id: string; label: string; icon: string; unit: string; lo: number; hi: number; digits?: number;
-  gpu?: boolean; sub?: (v: Record<string, any>) => string; scaleFromTotal?: boolean;
+  gpu?: boolean; sub?: (v: Record<string, any>, c?: import('../api').Capabilities) => string; scaleFromTotal?: boolean;
 }
 
 const TILES: TileDef[] = [
   { id: 'cpu.temp', label: 'CPU temperature', icon: 'temp', unit: '°C', lo: 35, hi: 95 },
-  { id: 'cpu.power', label: 'CPU package power', icon: 'bolt', unit: 'W', lo: 0, hi: 250, sub: (v) => v['cpu.power'] == null ? 'RAPL not readable' : '' },
+  { id: 'cpu.power', label: 'CPU package power', icon: 'bolt', unit: 'W', lo: 0, hi: 250, sub: (v, c) => v['cpu.power'] == null ? (c?.rapl_reason || 'not available on this node') : '' },
   { id: 'cpu.load', label: 'CPU load', icon: 'chip', unit: '%', lo: 0, hi: 100, sub: (v) => `${fmt(v['cpu.freq'], 2)} GHz · ${fmt(v['cpu.count'])} threads` },
   { id: 'gpu.temp', label: 'GPU temperature', icon: 'temp', unit: '°C', lo: 35, hi: 90, gpu: true, sub: (v) => v['gpu.short'] || '' },
   { id: 'gpu.power', label: 'GPU power', icon: 'bolt', unit: 'W', lo: 0, hi: 450, gpu: true },
@@ -28,7 +28,7 @@ function MetricTile({ d }: { d: TileDef }) {
   const num = typeof v === 'number' ? v : null;
   const color = d.unit === '°C' || d.unit === '%' ? heatColor(num, d.lo, d.hi) : '#66fcf1';
   const hist = history[d.id] || [];
-  const sub = d.sub && metrics ? d.sub(metrics.values) : '';
+  const sub = d.sub && metrics ? d.sub(metrics.values, metrics.capabilities) : '';
   return (
     <div class={`tile${num == null ? ' is-null' : ''}`}>
       <Ring frac={num == null ? null : (num - d.lo) / (d.hi - d.lo)} color={color} size={68} stroke={7}>

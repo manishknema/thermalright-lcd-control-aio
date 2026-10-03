@@ -446,3 +446,6 @@ select.input { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+.gcard.is-unavailable .thumb { opacity: .55; filter: grayscale(.4); }
+.gcard-note { font-size: .74em; color: var(--warn); margin: 4px 0 8px; line-height: 1.4; }

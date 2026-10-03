@@ -6,6 +6,9 @@ import { duplicateTheme, hash, MarkCfg, MarkControl, PackChips } from './common'
 
 const DEFAULT_MARK: MarkCfg = { mode: 'none', opacity: 0.1 };
 
+const REQ_LABELS: Record<string, string> = { gpu: 'an NVIDIA GPU', rapl: 'readable CPU package power (RAPL)', llm: 'an LLM metrics endpoint' };
+const reqLabel = (r: string) => r.split(' or ').map((x) => REQ_LABELS[x] || x).join(' or ');
+
 export function Gallery() {
   const store = useStore();
   const { packs, designs, themes, legacy, status, reload, go, confirm, prompt } = store;
@@ -55,15 +58,19 @@ export function Gallery() {
               const sel: Selection = { kind: 'design', design: d.id, pack, ...(mark ? { mark } : {}) };
               const isActive = active?.kind === 'design' && active.design === d.id && (active.pack || 'slate') === pack;
               return (
-                <article class={`gcard${isActive ? ' is-active' : ''}`} key={d.id}>
+                <article class={`gcard${isActive ? ' is-active' : ''}${d.available === false ? ' is-unavailable' : ''}`} key={d.id}>
                   <Thumb alt={`${d.name} with ${packObj?.name}`} cacheKey={`d|${d.id}|${pack}|${m.mode}|${m.opacity}`}
                     load={() => cachedPreview(`d|${d.id}|${pack}|${mark?.mode}|${mark?.opacity}`, { selection: sel })} />
                   <div class="gcard-body">
                     <div class="gcard-title">
                       <h3>{d.name}</h3>
                       {isActive && <Badge tone="ok">on panel</Badge>}
+                      {d.available === false && <Badge tone="warn">not on this node</Badge>}
                     </div>
                     <p class="gcard-desc">{d.description}</p>
+                    {d.available === false && (
+                      <p class="gcard-note">Needs {(d.requires || []).concat(d.requires_any?.length ? [d.requires_any.join(' or ')] : []).map(reqLabel).join(', ')}, which this node does not have. Rotation skips it.</p>
+                    )}
                     <MarkControl compact pack={packObj} value={m} onChange={(v) => setMarks((x) => ({ ...x, [`${d.id}|${pack}`]: v }))} />
                     <div class="gcard-actions">
                       <Btn kind="primary" small icon="play" disabled={busy !== null} onClick={() => apply(sel, `${d.name} · ${packObj?.name}`)}>Apply</Btn>

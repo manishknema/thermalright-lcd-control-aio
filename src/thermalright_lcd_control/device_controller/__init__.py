@@ -42,24 +42,30 @@ def _service_cfg(device) -> dict:
         return yaml.safe_load(f) or {}
 
 
+def _identity(device, svc: dict) -> dict:
+    from thermalright_lcd_control import settings
+    vid_pid = f"{device.vid:04x}:{device.pid:04x}"
+    info = {"vid_pid": vid_pid, "model": svc.get("model") or f"Thermalright {vid_pid}"}
+    return settings.identity(svc, info, device.width, device.height)
+
+
 def _start_runtime(device, logger):
     """Theme v2 runtime + local API when the config has a `service:` block.
 
     Without it the device keeps the upstream behaviour (config_<w><h>.yaml
     `display:` block, reloaded on mtime)."""
+    from thermalright_lcd_control import settings
     cfg = _service_cfg(device).get("service")
     if not cfg:
         logger.info("No service: block in config; upstream theme mode")
         return
     from thermalright_lcd_control.themes.runtime import Runtime
-    state_dir = os.environ.get("STATE_DIRECTORY", "").split(":")[0] or cfg.get("state_dir", "/var/lib/vigyan/thermalright")
-    vid_pid = f"{device.vid:04x}:{device.pid:04x}"
-    info = {"vid_pid": vid_pid, "model": cfg.get("model") or f"Thermalright {vid_pid} {device.width}x{device.height}",
-            "connected": True, "class": type(device).__name__}
-    rt = Runtime(device.width, device.height, info, cfg, state_dir, logger)
+    ident = _identity(device, cfg)
+    info = {"vid_pid": ident["vid_pid"], "model": ident["model"], "connected": True, "class": type(device).__name__}
+    rt = Runtime(device.width, device.height, info, cfg, settings.state_dir(cfg), logger, identity=ident)
     device.frame_source = rt
-    api_cfg = cfg.get("api") or {}
-    if api_cfg.get("enabled", True):
+    api_cfg = settings.api(cfg)
+    if api_cfg["enabled"]:
         from thermalright_lcd_control.api.server import DisplayApi
         try:
             DisplayApi(rt, api_cfg, logger).serve()
@@ -68,10 +74,10 @@ def _start_runtime(device, logger):
 
 
 def _start_telemetry(device, logger):
+    """OTLP is a side channel: any failure here is logged, never fatal."""
     try:
-        with open(device.config_file, "r", encoding="utf-8") as f:
-            cfg = (yaml.safe_load(f) or {}).get("telemetry")
+        full = _service_cfg(device)
         from thermalright_lcd_control.showcase import telemetry
-        telemetry.start(cfg, logger, device=f"{device.vid:04x}:{device.pid:04x}")
+        telemetry.start(full.get("telemetry"), logger, identity=_identity(device, full.get("service") or {}))
     except Exception as e:
         logger.warning(f"OTLP telemetry not started: {e}")

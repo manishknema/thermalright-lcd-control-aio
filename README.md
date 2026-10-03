@@ -178,6 +178,30 @@ runtime and a local HTTP API (stdlib). Templates are in
 
 The full route list is in the docstring of `src/thermalright_lcd_control/api/server.py`.
 
+**Configuration.** Nothing deployment-specific is built in. Every path, name and
+address comes from the config file or an environment variable, and each has a
+neutral default; `src/thermalright_lcd_control/settings.py` lists them all. The
+main ones:
+
+| What | Default |
+|---|---|
+| state dir | `/var/lib/thermalright-lcd`, or systemd `StateDirectory=` |
+| token file | `/etc/thermalright-lcd/api.token` |
+| API address | `127.0.0.1:7431` |
+| node name and id | the hostname |
+| node page URL template | none |
+| peers files | none |
+| OTLP endpoint | `OTEL_EXPORTER_OTLP_ENDPOINT` |
+
+`GET /api/status` returns an `identity` block with the node name, id and role,
+the device kind, model, USB id and resolution, and the service name. The same
+values become the OTLP resource attributes. Extra attributes can be added under
+`telemetry.resource_attributes`.
+
+Designs can require node capabilities, such as `"requires": ["gpu"]` or
+`"requires_any": ["rapl", "gpu"]`. The gallery marks a design that the node
+cannot show, and rotation skips it.
+
 ### Theme v2 (designs, widgets, packs)
 
 A theme is a design (a list of widgets) plus a pack (palette, fonts and an
@@ -245,7 +269,8 @@ readings.
 - runs the service as the unprivileged user `vigyan-lcd`, with root owning the
   unit, the `/etc` defaults and the token, and `StateDirectory=` for user state;
 - grants RAPL read access to that user only;
-- puts the web UI behind the node gateway at `/display/`.
+- puts the web UI behind the node gateway at `/display/<node_id>/` (an example
+  deployment; the fork itself assumes no URL layout).
 
 ## Add new device
 
