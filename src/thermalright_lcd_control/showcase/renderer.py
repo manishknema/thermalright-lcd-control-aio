@@ -101,9 +101,9 @@ class ShowcaseRenderer:
         x0, y0, x1, y1 = box
         d.rounded_rectangle(box, radius=self.S(radius), fill=TRACK)
         frac = max(0.0, min(1.0, frac or 0.0))
-        if frac > 0:
-            d.rounded_rectangle((x0, y0, x0 + max(2, int((x1 - x0) * frac)), y1),
-                                radius=self.S(radius), fill=color)
+        fill_w = int((x1 - x0) * frac)
+        if fill_w >= 2 * self.S(radius):  # narrower than the corner radius renders as a dot
+            d.rounded_rectangle((x0, y0, x0 + fill_w, y1), radius=self.S(radius), fill=color)
 
     def _card(self, d, box, title, accent, temp, watts, util, extra: Optional[Tuple[str, float]]):
         S, f = self.S, self.font

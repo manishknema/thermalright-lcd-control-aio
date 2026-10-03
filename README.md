@@ -127,6 +127,77 @@ sudo systemctl stop thermalright-lcd-control.service
 - **Desktop Environment**: Any modern Linux desktop (GNOME, KDE, XFCE, etc.)
 - **Hardware**: Compatible Thermalright LCD device
 
+## Vigyan packaging
+
+This fork packages the upstream project as a governed, headless-first service for
+the Vigyan fleet. Upstream behaviour (themes, GUI, device support) is unchanged;
+everything below is additive.
+
+**Packaging.** The interpreter comes from conda (`python=3.13`, conda-forge) and
+the dependencies come from `uv.lock`, exactly:
+
+```bash
+conda create -p <rt>/conda -c conda-forge --override-channels python=3.13
+UV_PROJECT_ENVIRONMENT=<rt>/venv uv sync --frozen --no-dev --no-editable \
+    --extra otel --python <rt>/conda/bin/python
+```
+
+The core install is headless. Optional extras:
+
+| extra   | adds                                    | for                         |
+|---------|-----------------------------------------|-----------------------------|
+| `otel`  | OpenTelemetry SDK + OTLP/HTTP exporter  | metrics to a local collector |
+| `gui`   | PySide6 + opencv-python                 | dev nodes with a display     |
+| `video` | opencv-python-headless                  | video backgrounds, headless  |
+
+`gui` and `video` are declared as conflicting (both provide `cv2`). The OS still
+has to provide `libhidapi-hidraw0` and `libusb-1.0-0`.
+
+**Showcase layout.** If `showcase.enabled: true` is set in `config_<w><h>.yaml`,
+the service draws a hardware dashboard instead of a theme. It shows CPU package
+temperature and watts (from Intel RAPL energy counters), per-core load bars, NVML
+GPU temperature, power, utilisation and VRAM, RAM, and NVMe temperature. All
+reads are read-only: sysfs, RAPL and NVML queries. Templates for each panel size
+are in `resources/config/showcase/`. With `showcase.enabled: false` the upstream
+theme in the same file's `display:` block is used.
+
+**Telemetry.** With the `otel` extra and `telemetry.enabled: true`, the service
+exports the same readings as OTLP gauges (`hw.cpu.temperature`, `hw.cpu.power`,
+`hw.cpu.core.utilization`, `hw.gpu.*`, `hw.memory.*`, `hw.nvme.temperature`). It
+also exports the counters `hw.lcd.frames_sent` and `hw.lcd.frame_errors`. The
+default endpoint is `http://127.0.0.1:4318`.
+
+**Service behaviour.** The service:
+
+- waits for a hot-plugged panel instead of exiting;
+- writes a `frames_sent=N` line every 60 s, so you can confirm frames are reaching
+  the device;
+- exits on a USB write error so that systemd (`Restart=always`) reopens the device;
+- logs to journald when it runs under systemd.
+
+The RGB565 encoder uses numpy and produces byte-identical output to the upstream
+per-pixel loop.
+
+**Probe.** `thermalright-lcd-control-probe` prints what this machine can read.
+`--png out.png` renders the showcase frame to a file, and `--usb` lists the
+attached panels.
+
+**Fleet install.** The installer is in the Vigyan-Virtual-Cloud repo:
+`scripts/a19-install-thermalright-aio.sh`. It is also available as the llm-cli
+feature `hw-display` (`llm-cli hw-display ...`). The installer:
+
+- detects the panel by USB VID:PID;
+- installs a group-scoped udev rule;
+- installs `vigyan-thermalright-aio.service`, which runs as the unprivileged user
+  `vigyan-hwdisplay`;
+- grants that group read access to RAPL `energy_uj` at each start (the file is
+  root-only by default, CVE-2020-8694);
+- keeps config in `/etc/vigyan/thermalright/aio/`.
+
+Components: `service` (default), `gui`, `themes` and `dashboard`. The `dashboard`
+component installs the OpenObserve "Hardware showcase" dashboard. If `themes` is
+not chosen, the 60 MB theme pack is left out by sparse checkout.
+
 ## Add new device
 
 In [HOWTO.md](doc/HOWTO.md) I detail all the steps I gone through to find out how myy device works and all steps to add
