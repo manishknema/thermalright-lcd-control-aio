@@ -79,6 +79,23 @@ The API needs a bearer token and listens on loopback only unless you turn LAN ac
 service needs only the USB display (granted through a udev rule) and read access to RAPL
 energy counters (granted when it starts). It never needs root while running.
 
+**Behind a reverse proxy.** If a proxy adds the token on the server side, then
+anyone who can reach the proxy can do whatever the token allows. The proxy
+therefore has to protect writes itself. The supported model is:
+
+- **Reads stay open:** `GET` and `HEAD` requests (status, metrics, frame PNG,
+  lists) and `POST api/preview.png` (renders a draft without saving anything).
+- **Writes need a login:** every other `POST`, `PUT` and `DELETE` (apply, theme,
+  pack and rotation changes, media uploads and deletes) must pass HTTP Basic
+  auth at the proxy, for example nginx `limit_except GET HEAD { auth_basic ...; }`.
+- **Sign-in path:** the proxy serves `<prefix>/login` behind the same realm and
+  redirects back to `<prefix>/`.
+
+When a write returns `401` with `WWW-Authenticate: Basic`, the web UI shows
+**Sign in to edit**, which opens that `login` URL. After you sign in, the browser
+sends the credentials with every later write under the same prefix. Viewing
+never asks for a password.
+
 ---
 
 # Upstream README

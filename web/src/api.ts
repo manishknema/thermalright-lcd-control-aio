@@ -113,6 +113,13 @@ type Listener = (status: number) => void;
 const authListeners = new Set<Listener>();
 export function onAuthError(fn: Listener) { authListeners.add(fn); return () => authListeners.delete(fn); }
 
+// A reverse proxy may protect changes (POST/PUT/DELETE) with HTTP Basic auth while
+// leaving reads open. Its 401 carries `WWW-Authenticate: Basic`; the UI then offers
+// "Sign in", which opens `login` (relative to this page) in the proxy's realm.
+const signInListeners = new Set<() => void>();
+export function onSignInNeeded(fn: () => void) { signInListeners.add(fn); return () => signInListeners.delete(fn); }
+export const SIGN_IN_PATH = 'login';
+
 async function raw(method: string, path: string, body?: BodyInit | null, ctype?: string): Promise<Response> {
   const headers: Record<string, string> = {};
   const t = devToken();
@@ -130,6 +137,10 @@ async function raw(method: string, path: string, body?: BodyInit | null, ctype?:
       const j = await r.json();
       if (j && j.error) msg = j.error;
     } catch { /* not JSON */ }
+    if (r.status === 401 && /^basic/i.test(r.headers.get('WWW-Authenticate') || '')) {
+      signInListeners.forEach((f) => f());
+      throw new ApiError(401, 'Sign in to make changes on this display');
+    }
     if (r.status === 401) authListeners.forEach((f) => f(401));
     throw new ApiError(r.status, msg);
   }
