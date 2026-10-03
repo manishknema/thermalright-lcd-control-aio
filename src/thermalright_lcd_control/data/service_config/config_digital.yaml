@@ -7,7 +7,7 @@
 #                   (empty = hostname).
 # service.api       local HTTP API + web UI. Loopback only unless lan: true; every
 #                   /api/* call needs the token in token_file (a reverse proxy can
-#                   inject it). node_url_template, e.g. "/display/{node_id}/", builds
+#                   inject it). node_url_template, e.g. "/display/{slug}/", builds
 #                   links to other display nodes listed in nodes_files.
 # service.defaults  first-run selection: a built-in design + a theme pack.
 # service.extras    optional readings: llm.tokens_s from a Prometheus counter and
@@ -35,6 +35,8 @@ service:
     token_file: /etc/thermalright-lcd/api.token
     base_path: ''
     node_url_template: ''
+    slug: ''
+    slug_prefix: display
     nodes_files: []
 digital:
   controller_config: ''

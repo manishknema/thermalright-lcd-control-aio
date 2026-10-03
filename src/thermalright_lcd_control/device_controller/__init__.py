@@ -104,7 +104,7 @@ def run_digital(config_dir: str, logger, block: bool = True):
     device = {"vid_pid": "0416:8001", "model": svc.get("model") or "Thermalright digital 0416:8001",
               "connected": True, "kind": "digital"}
     ident = settings.identity(svc, device, 0, 0)
-    ident.update(device_kind="digital", resolution="segment")
+    ident.update(device_kind="digital", resolution="segment", slug=settings.display_slug(svc, "digital"))
     rt = DigitalRuntime(svc, device, settings.state_dir(svc), logger, identity=ident)
     try:
         from thermalright_lcd_control.showcase import telemetry
