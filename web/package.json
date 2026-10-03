@@ -1,0 +1,19 @@
+{
+  "name": "thermalright-display-web",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Web UI for the Thermalright LCD display service (served at /display/ by the node gateway)",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build"
+  },
+  "dependencies": {
+    "preact": "^10.27.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  }
+}

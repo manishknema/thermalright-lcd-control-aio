@@ -155,6 +155,13 @@ class DisplayApi:
                 return {"packs": [{**p.doc, "builtin": p.builtin} for p in rt.packs.all().values()]}
             if len(parts) == 2 and method == "PUT":
                 doc = {**J(), "id": parts[1]}
+                # The web UI uploads fonts to the media dir and refers to them as
+                # "media/<rel>"; pack font paths resolve against the pack dir, so
+                # store them as absolute paths under the media root.
+                fonts = doc.get("fonts") if isinstance(doc.get("fonts"), dict) else {}
+                for role, val in list(fonts.items()):
+                    if isinstance(val, str) and val.startswith("media/"):
+                        fonts[role] = str(self._safe(val[len("media/"):]))
                 saved = rt.packs.save(doc)
                 if rt.theme.get("pack") == saved["id"]:
                     rt.apply(rt.state["active"])

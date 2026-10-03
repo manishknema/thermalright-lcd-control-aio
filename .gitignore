@@ -64,3 +64,6 @@ releases/
 *.log
 *.tmp
 /resources/config/device_info.yaml
+
+# Web UI sources (built output in src/thermalright_lcd_control/web is committed)
+web/node_modules/
