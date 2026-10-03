@@ -1,11 +1,13 @@
 
 [build-system]
-requires = ["hatchling"]
+# Pinned so a wheel built from a given commit is byte-for-byte reproducible
+# (deployments pin it by sha256).
+requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
 name = "thermalright-lcd-control"
-version = "1.4.0"
+version = "1.5.0"
 description = "Linux Thermal rigth lcd display control"
 authors = [{ name = "REJEB BEN REJEB", email = "benrejebrejeb@gmail.com" }]
 readme = "README.md"
@@ -37,6 +39,7 @@ otel = [
 [project.scripts]
 thermalright-lcd-control-service = "thermalright_lcd_control.service:main"
 thermalright-lcd-control-probe = "thermalright_lcd_control.showcase.probe:main"
+thermalright-lcd-control-init = "thermalright_lcd_control.init_config:main"
 
 # Configuration Hatchling
 [tool.hatch.build.targets.wheel]
