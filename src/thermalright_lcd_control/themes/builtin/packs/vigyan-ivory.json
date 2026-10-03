@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "vigyan-ivory",
+  "name": "VigyanBytes Ivory",
+  "ground": "light",
+  "colors": {
+    "ink": "#faf6ee",
+    "panel": "#f3ecdd",
+    "line": "#ece2cf",
+    "text": "#1c1814",
+    "muted": "#6b6357",
+    "accent1": "#f59e0b",
+    "accent2": "#15803d",
+    "accent3": "#c2670d",
+    "ok": "#15803d",
+    "warn": "#f59e0b",
+    "hot": "#c2670d"
+  },
+  "fonts": {
+    "display": "vigyan/fonts/newsreader-600-normal.ttf",
+    "bold": "vigyan/fonts/public-sans-700-normal.ttf",
+    "body": "vigyan/fonts/public-sans-400-normal.ttf",
+    "mono": "vigyan/fonts/jetbrains-mono-500-normal.ttf"
+  },
+  "mark": {
+    "small": {
+      "deep": "vigyan/marks/mark-small-deep.png",
+      "ivory": "vigyan/marks/mark-small-ivory.png"
+    },
+    "big": {
+      "deep": "vigyan/marks/mark-deep.png",
+      "ivory": "vigyan/marks/mark-ivory.png"
+    }
+  },
+  "default_mark": "corner",
+  "license": "VigyanBytes brand; fonts SIL OFL 1.1 (vigyan/fonts/OFL.txt). Generated from tokens.css; do not edit."
+}
