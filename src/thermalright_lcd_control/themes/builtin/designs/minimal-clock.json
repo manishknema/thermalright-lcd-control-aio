@@ -44,15 +44,16 @@
    "x": 56,
    "y": 192,
    "text": "{cpu.temp:.0f}°",
-   "size": 20,
+   "size": 26,
    "font": "bold",
    "color": "heat",
    "metric": "cpu.temp",
    "heat": [
-    35,
-    95
+    40,
+    90
    ],
-   "anchor": "mm"
+   "anchor": "mm",
+   "flash_at": 85
   },
   {
    "type": "text",
@@ -69,7 +70,7 @@
    "x": 152,
    "y": 192,
    "text": "{gpu.temp:.0f}°",
-   "size": 20,
+   "size": 22,
    "font": "bold",
    "color": "heat",
    "metric": "gpu.temp",
@@ -96,7 +97,7 @@
    "x": 152,
    "y": 192,
    "text": "{ram.pct:.0f}%",
-   "size": 20,
+   "size": 18,
    "font": "bold",
    "color": "accent3",
    "anchor": "mm",
@@ -118,7 +119,7 @@
    "x": 248,
    "y": 192,
    "text": "{sys.power:.0f}W",
-   "size": 20,
+   "size": 18,
    "font": "bold",
    "color": "accent1",
    "anchor": "mm"

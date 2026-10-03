@@ -299,6 +299,14 @@ optional mark).
 - Widgets marked `"requires": "gpu"` are skipped on nodes without an NVML GPU.
   Any metric that is unavailable is drawn as an em dash.
 
+**Reading hierarchy.** Every built-in design shows the CPU package temperature
+in heat colours. On a CPU design it is the largest number. The order of size is
+CPU temperature, then GPU temperature, then CPU watts; a wattage is never drawn
+larger than a temperature on the same design. `"flash_at": 85` on a temperature
+widget turns on the hot state: at or above 85 °C (high for an Intel Core Ultra
+package) the reading shows inverted on the pack's `hot` colour on alternate
+seconds.
+
 **Widget types.** `text` (templates such as `{cpu.temp:.0f}` or
 `{sys.power@peak:.0f}`), `number`, `arc`, `ring`, `bar`, `sparkline` (60 s
 history buffer), `coregrid` (sized to the host's core count), `clock`, `dots`

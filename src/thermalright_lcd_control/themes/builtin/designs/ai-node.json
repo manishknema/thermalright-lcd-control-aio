@@ -2,7 +2,7 @@
  "schema": 2,
  "id": "ai-node",
  "name": "AI Node",
- "description": "VRAM ring, GPU load and power, LLM tokens/s and service health",
+ "description": "CPU package temperature ring, GPU temperature and load, VRAM, power, LLM tokens/s and service health",
  "order": 4,
  "base": [
   320,
@@ -20,76 +20,45 @@
  "widgets": [
   {
    "type": "ring",
-   "metric": "gpu.vram_pct",
+   "metric": "cpu.temp",
    "cx": 84,
-   "cy": 120,
-   "r": 66,
-   "width": 16,
-   "min": 0,
+   "cy": 118,
+   "r": 64,
+   "width": 14,
+   "min": 20,
    "max": 100,
-   "color": "accent3",
-   "requires": "gpu"
+   "color": "heat",
+   "heat": [
+    40,
+    90
+   ]
   },
   {
    "type": "text",
    "x": 84,
-   "y": 108,
-   "text": "{gpu.vram_used:.0f}",
+   "y": 106,
+   "text": "{cpu.temp:.0f}°",
    "size": 40,
    "font": "bold",
    "color": "text",
-   "anchor": "mm",
-   "requires": "gpu"
+   "metric": "cpu.temp",
+   "flash_at": 85,
+   "anchor": "mm"
   },
   {
    "type": "text",
    "x": 84,
-   "y": 140,
-   "text": "of {gpu.vram_total:.0f} GB VRAM",
+   "y": 138,
+   "text": "CPU PACKAGE",
    "size": 10,
    "font": "bold",
    "color": "muted",
-   "anchor": "mm",
-   "requires": "gpu"
-  },
-  {
-   "type": "ring",
-   "metric": "ram.pct",
-   "cx": 84,
-   "cy": 120,
-   "r": 66,
-   "width": 16,
-   "min": 0,
-   "max": 100,
-   "color": "accent3",
-   "requires": "!gpu"
-  },
-  {
-   "type": "text",
-   "x": 84,
-   "y": 108,
-   "text": "{ram.used:.0f}",
-   "size": 40,
-   "font": "bold",
-   "color": "text",
-   "anchor": "mm",
-   "requires": "!gpu"
-  },
-  {
-   "type": "text",
-   "x": 84,
-   "y": 140,
-   "text": "of {ram.total:.0f} GB RAM",
-   "size": 10,
-   "font": "bold",
-   "color": "muted",
-   "anchor": "mm",
-   "requires": "!gpu"
+   "anchor": "mm"
   },
   {
    "type": "text",
    "x": 176,
-   "y": 22,
+   "y": 18,
    "text": "{node.name}",
    "size": 12,
    "font": "bold",
@@ -99,7 +68,7 @@
   {
    "type": "text",
    "x": 176,
-   "y": 52,
+   "y": 44,
    "text": "GPU",
    "upper": true,
    "font": "bold",
@@ -110,8 +79,8 @@
   {
    "type": "text",
    "x": 304,
-   "y": 49,
-   "text": "{gpu.util:.0f}% · {gpu.temp:.0f}°",
+   "y": 41,
+   "text": "{gpu.temp:.0f}° · {gpu.util:.0f}%",
    "size": 17,
    "font": "bold",
    "color": "text",
@@ -122,9 +91,9 @@
    "type": "bar",
    "metric": "gpu.util",
    "x": 176,
-   "y": 74,
+   "y": 64,
    "w": 128,
-   "h": 7,
+   "h": 6,
    "max": 100,
    "color": "accent2",
    "requires": "gpu"
@@ -132,7 +101,73 @@
   {
    "type": "text",
    "x": 176,
+   "y": 84,
+   "text": "VRAM",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 81,
+   "text": "{gpu.vram_used:.0f}/{gpu.vram_total:.0f} GB",
+   "size": 17,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra",
+   "requires": "gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "gpu.vram_pct",
+   "x": 176,
    "y": 104,
+   "w": 128,
+   "h": 6,
+   "max": 100,
+   "color": "accent3",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 176,
+   "y": 44,
+   "text": "RAM",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 41,
+   "text": "{ram.used:.0f}/{ram.total:.0f} GB",
+   "size": 17,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra",
+   "requires": "!gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "ram.pct",
+   "x": 176,
+   "y": 64,
+   "w": 128,
+   "h": 6,
+   "max": 100,
+   "color": "accent3",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 176,
+   "y": 124,
    "text": "Power",
    "upper": true,
    "font": "bold",
@@ -143,7 +178,7 @@
   {
    "type": "text",
    "x": 304,
-   "y": 101,
+   "y": 121,
    "text": "{gpu.power:.0f} W",
    "size": 17,
    "font": "bold",
@@ -155,9 +190,9 @@
    "type": "bar",
    "metric": "gpu.power",
    "x": 176,
-   "y": 126,
+   "y": 144,
    "w": 128,
-   "h": 7,
+   "h": 6,
    "max": 450,
    "color": "accent1",
    "requires": "gpu"
@@ -165,32 +200,101 @@
   {
    "type": "text",
    "x": 176,
-   "y": 156,
-   "text": "Tokens/s",
+   "y": 84,
+   "text": "CPU power",
    "upper": true,
    "font": "bold",
    "size": 11,
-   "color": "muted"
+   "color": "muted",
+   "requires": "!gpu"
   },
   {
    "type": "text",
    "x": 304,
-   "y": 153,
+   "y": 81,
+   "text": "{cpu.power:.0f} W",
+   "size": 17,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra",
+   "requires": "!gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "cpu.power",
+   "x": 176,
+   "y": 104,
+   "w": 128,
+   "h": 6,
+   "max": 250,
+   "color": "accent1",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 176,
+   "y": 164,
+   "text": "Tokens/s",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 161,
    "text": "{llm.tokens_s:.0f}",
    "size": 17,
    "font": "bold",
    "color": "text",
-   "anchor": "ra"
+   "anchor": "ra",
+   "requires": "gpu"
   },
   {
    "type": "bar",
    "metric": "llm.tokens_s",
    "x": 176,
-   "y": 178,
+   "y": 184,
    "w": 128,
-   "h": 7,
+   "h": 6,
    "max": 200,
-   "color": "ok"
+   "color": "ok",
+   "requires": "gpu"
+  },
+  {
+   "type": "text",
+   "x": 176,
+   "y": 124,
+   "text": "Tokens/s",
+   "upper": true,
+   "font": "bold",
+   "size": 11,
+   "color": "muted",
+   "requires": "!gpu"
+  },
+  {
+   "type": "text",
+   "x": 304,
+   "y": 121,
+   "text": "{llm.tokens_s:.0f}",
+   "size": 17,
+   "font": "bold",
+   "color": "text",
+   "anchor": "ra",
+   "requires": "!gpu"
+  },
+  {
+   "type": "bar",
+   "metric": "llm.tokens_s",
+   "x": 176,
+   "y": 144,
+   "w": 128,
+   "h": 6,
+   "max": 200,
+   "color": "ok",
+   "requires": "!gpu"
   },
   {
    "type": "dots",

@@ -29,8 +29,8 @@
    "max": 100,
    "color": "heat",
    "heat": [
-    35,
-    95
+    40,
+    90
    ]
   },
   {
@@ -40,8 +40,14 @@
    "text": "{cpu.temp:.0f}°",
    "size": 46,
    "font": "bold",
-   "color": "text",
-   "anchor": "mm"
+   "color": "heat",
+   "anchor": "mm",
+   "metric": "cpu.temp",
+   "heat": [
+    40,
+    90
+   ],
+   "flash_at": 85
   },
   {
    "type": "text",
@@ -78,12 +84,12 @@
    "metric": "cpu.power",
    "x": 190,
    "y": 40,
-   "size": 52,
+   "size": 34,
    "font": "display",
    "color": "accent1",
    "unit": "W",
-   "unit_size": 18,
-   "unit_dy": 36,
+   "unit_size": 14,
+   "unit_dy": 17,
    "gap": 4
   },
   {

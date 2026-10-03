@@ -19,6 +19,30 @@
  },
  "widgets": [
   {
+   "type": "rect",
+   "x": 8,
+   "y": 8,
+   "w": 84,
+   "h": 24,
+   "radius": 6,
+   "color": "panel"
+  },
+  {
+   "type": "text",
+   "x": 14,
+   "y": 13,
+   "text": "CPU {cpu.temp:.0f}°",
+   "size": 13,
+   "font": "bold",
+   "color": "heat",
+   "metric": "cpu.temp",
+   "heat": [
+    40,
+    90
+   ],
+   "flash_at": 85
+  },
+  {
    "type": "arc",
    "metric": "gpu.temp",
    "cx": 88,
@@ -83,12 +107,12 @@
    "metric": "gpu.power",
    "x": 180,
    "y": 32,
-   "size": 46,
+   "size": 30,
    "font": "display",
    "color": "accent2",
    "unit": "W",
-   "unit_size": 16,
-   "unit_dy": 30,
+   "unit_size": 13,
+   "unit_dy": 14,
    "gap": 4,
    "requires": "gpu"
   },

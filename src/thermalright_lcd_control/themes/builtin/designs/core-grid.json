@@ -31,11 +31,27 @@
   {
    "type": "text",
    "x": 304,
-   "y": 10,
-   "text": "{cpu.temp:.0f}° · {cpu.power:.0f} W",
-   "size": 15,
+   "y": 6,
+   "text": "{cpu.temp:.0f}°",
+   "size": 22,
    "font": "bold",
-   "color": "accent1",
+   "color": "heat",
+   "metric": "cpu.temp",
+   "heat": [
+    40,
+    90
+   ],
+   "flash_at": 85,
+   "anchor": "ra"
+  },
+  {
+   "type": "text",
+   "x": 252,
+   "y": 13,
+   "text": "{cpu.power:.0f} W",
+   "size": 12,
+   "font": "bold",
+   "color": "muted",
    "anchor": "ra"
   },
   {
