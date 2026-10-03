@@ -1,6 +1,6 @@
 import { render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { devToken, setDevToken } from './api';
+import { devToken, setDevToken, SIGN_IN_PATH } from './api';
 import { StoreProvider, Tab, useStore } from './store';
 import { Btn, Dot, Icon } from './ui';
 import { Live } from './views/Live';
@@ -21,7 +21,7 @@ const NAV: { id: Tab; label: string; icon: string }[] = [
 ];
 
 function Header({ onToken }: { onToken: () => void }) {
-  const { status, metrics, online, needToken } = useStore();
+  const { status, metrics, online, needToken, needSignIn } = useStore();
   const dev = status?.device;
   const id = status?.identity;
   const node = id?.node_name || (metrics?.values['node.name'] as string) || 'this node';
@@ -62,6 +62,11 @@ function Header({ onToken }: { onToken: () => void }) {
         </span>
       </div>
       <div class="top-actions">
+        {needSignIn && (
+          <a class="btn btn-primary btn-sm" href={SIGN_IN_PATH} title="Changes on this display need sign-in at the gateway; viewing stays open">
+            <Icon name="key" size={14} /><span>Sign in to edit</span>
+          </a>
+        )}
         <button type="button" class={`icon-btn${needToken ? ' attn' : ''}`} onClick={onToken} aria-label="Developer token" title="Developer token">
           <Icon name="key" size={15} />
         </button>

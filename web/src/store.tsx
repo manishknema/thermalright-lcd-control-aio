@@ -1,6 +1,6 @@
 import { ComponentChildren, createContext } from 'preact';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { get, Json, MediaItem, Metrics, onAuthError, Pack, Status, Theme } from './api';
+import { get, Json, MediaItem, Metrics, onAuthError, Pack, Status, Theme, onSignInNeeded } from './api';
 
 export type Tab = 'live' | 'gallery' | 'editor' | 'packs' | 'rotation' | 'media';
 export type ToastKind = 'ok' | 'err' | 'info';
@@ -20,6 +20,7 @@ export interface Store {
   status: Status | null;
   online: boolean;
   needToken: boolean;
+  needSignIn: boolean;
   metrics: Metrics | null;
   history: Record<string, number[]>;
   packs: Pack[];
@@ -56,6 +57,7 @@ export function StoreProvider({ children }: { children: ComponentChildren }) {
   const [status, setStatus] = useState<Status | null>(null);
   const [online, setOnline] = useState(true);
   const [needToken, setNeedToken] = useState(false);
+  const [needSignIn, setNeedSignIn] = useState(false);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [history, setHistory] = useState<Record<string, number[]>>({});
   const [packs, setPacks] = useState<Pack[]>([]);
@@ -90,6 +92,7 @@ export function StoreProvider({ children }: { children: ComponentChildren }) {
   }, [toast]);
 
   useEffect(() => onAuthError(() => setNeedToken(true)), []);
+  useEffect(() => onSignInNeeded(() => setNeedSignIn(true)), []);
   useEffect(() => { reload(); }, [epoch]);
 
   // status ~1/s, metrics ~1/s (history for sparklines kept client side)
@@ -139,10 +142,10 @@ export function StoreProvider({ children }: { children: ComponentChildren }) {
   }, []);
 
   const value = useMemo<Store>(() => ({
-    status, online, needToken, metrics, history, packs, designs, themes, legacy, media,
+    status, online, needToken, needSignIn, metrics, history, packs, designs, themes, legacy, media,
     tab: route.tab, editing: route.editing, go, reload: reload as Store['reload'], toast, toasts, dismiss,
     confirm, prompt, dialog, closeDialog, tokenChanged: () => setEpoch((e) => e + 1),
-  }), [status, online, needToken, metrics, history, packs, designs, themes, legacy, media, route, go, reload, toast, toasts, dismiss, confirm, prompt, dialog, closeDialog]);
+  }), [status, online, needToken, needSignIn, metrics, history, packs, designs, themes, legacy, media, route, go, reload, toast, toasts, dismiss, confirm, prompt, dialog, closeDialog]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
