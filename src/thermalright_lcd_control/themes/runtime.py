@@ -149,6 +149,7 @@ class Runtime:
         self.packs = PackStore(str(self.state_dir / "packs"), extra_dirs=self.cfg.get("pack_dirs") or [])
         self.designs = load_designs()
         self.book = M.MetricBook(SamplerThread.get(1.0), M.Extras(self.cfg.get("extras")))
+        self.book.node_name = self.identity.get("node_name")
         self.lock = threading.RLock()
         self.wake = threading.Event()
         self.last_frame: Optional[Image.Image] = None

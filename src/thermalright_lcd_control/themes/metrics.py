@@ -176,6 +176,8 @@ class MetricBook:
         vals = from_sample(sample or self.sampler.latest)
         vals.update(self.extras.values)
         vals.setdefault("llm.tokens_s", None)
+        if getattr(self, "node_name", None):
+            vals["node.name"] = self.node_name  # configured identity wins over the raw hostname
         return vals
 
     def series(self, key: str, seconds: float) -> list:
